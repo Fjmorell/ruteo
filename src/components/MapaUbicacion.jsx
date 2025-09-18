@@ -1,79 +1,75 @@
-import { useEffect, useState, useRef } from "react";
-import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
+import { useEffect, useState } from "react";
+import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { supabase } from "../lib/supabase";
 
-const containerStyle = { width: "100%", height: "400px" };
-
-function createBlueDot() {
-  const img = document.createElement("img");
-  img.src = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
-  img.style.width = "32px";
-  img.style.height = "32px";
-  return img;
-}
+const containerStyle = {
+  width: "100%",
+  height: "400px",
+};
 
 export default function MapaUbicacion({ choferId }) {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY,
-    libraries: ["marker"],
   });
 
   const [posicion, setPosicion] = useState(null);
-  const markerRef = useRef(null);
-  const mapRef = useRef(null);
 
   useEffect(() => {
     if (!choferId) return;
 
-    const canal = supabase
-      .channel("ubicaciones_actuales")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "ubicaciones_actuales", filter: `chofer_id=eq.${choferId}` },
-        (payload) => {
-          if (payload.new?.lat && payload.new?.lng) {
-            setPosicion({ lat: Number(payload.new.lat), lng: Number(payload.new.lng) });
-          }
+    // === GEOLOCALIZACIÓN en vivo ===
+    const watchId = navigator.geolocation.watchPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setPosicion({ lat: latitude, lng: longitude });
+
+        console.log("📍 Ubicación enviada:", latitude, longitude);
+
+        try {
+          // 1. Guardar en historial
+          await supabase.from("ubicaciones_historial").insert([
+            {
+              chofer_id: choferId,
+              lat: latitude,
+              lng: longitude,
+            },
+          ]);
+
+          // 2. Guardar/Actualizar en ubicaciones_actuales
+          await supabase.from("ubicaciones_actuales").upsert([
+            {
+              chofer_id: choferId,
+              lat: latitude,
+              lng: longitude,
+              updated_at: new Date(),
+            },
+          ]);
+        } catch (error) {
+          console.error("❌ Error guardando ubicación:", error.message);
         }
-      )
-      .subscribe();
+      },
+      (err) => console.error("Error al obtener ubicación:", err),
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+    );
 
-    const fetchUbicacion = async () => {
-      const { data, error } = await supabase
-        .from("ubicaciones_actuales")
-        .select("lat, lng")
-        .eq("chofer_id", choferId)
-        .single();
-
-      if (!error && data) setPosicion({ lat: Number(data.lat), lng: Number(data.lng) });
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
     };
-    fetchUbicacion();
-
-    return () => supabase.removeChannel(canal);
   }, [choferId]);
 
-  useEffect(() => {
-    if (mapRef.current && posicion) {
-      if (markerRef.current) {
-        markerRef.current.position = new window.google.maps.LatLng(posicion.lat, posicion.lng);
-      } else {
-        markerRef.current = new window.google.maps.marker.AdvancedMarkerElement({
-          map: mapRef.current,
-          position: new window.google.maps.LatLng(posicion.lat, posicion.lng),
-          content: createBlueDot(),
-        });
-      }
-    }
-  }, [posicion]);
-
-  if (!isLoaded) return <p>Cargando mapa...</p>;
-
   return (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={posicion || { lat: -27.4712, lng: -58.8367 }}
-      zoom={15}
-      onLoad={(map) => (mapRef.current = map)}
-    />
+    <div>
+      {isLoaded && posicion ? (
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={posicion}
+          zoom={14}
+        >
+          <Marker position={posicion} />
+        </GoogleMap>
+      ) : (
+        <p>Cargando mapa...</p>
+      )}
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+// src/components/ChoferTracker.jsx
 import { useEffect } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -15,27 +16,36 @@ export default function ChoferTracker({ choferId }) {
         const { latitude, longitude } = pos.coords;
 
         try {
-         // 1) Insertar en historial (siempre)
-await supabase.from("ubicaciones_historial").insert({
-  chofer_id: choferId,
-  lat: latitude,
-  lng: longitude,
-});
+          // Insertar siempre en historial
+          const { error: errorHistorial } = await supabase
+            .from("ubicaciones_historial")
+            .insert({
+              chofer_id: choferId,
+              lat: latitude,
+              lng: longitude,
+            });
 
-// 2) Guardar/actualizar en actuales
-await supabase.from("ubicaciones_actuales").upsert(
-  {
-    chofer_id: choferId,
-    lat: latitude,
-    lng: longitude,
-  },
-  { onConflict: ["chofer_id"] }
-);
+          if (errorHistorial) {
+            console.error("❌ Error historial:", errorHistorial.message);
+          }
 
+          // Actualizar en actuales
+          const { error: errorActual } = await supabase
+            .from("ubicaciones_actuales")
+            .upsert({
+              chofer_id: choferId,
+              lat: latitude,
+              lng: longitude,
+              updated_at: new Date().toISOString(),
+            });
+
+          if (errorActual) {
+            console.error("❌ Error actuales:", errorActual.message);
+          }
 
           console.log("✅ Ubicación enviada:", latitude, longitude);
         } catch (error) {
-          console.error("❌ Error guardando ubicación:", error.message);
+          console.error("❌ Error general:", error.message);
         }
       },
       (err) => console.error("Error GPS:", err),
