@@ -19,7 +19,7 @@ const center = {
 
 export function MapaRutas() {
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: 'AIzaSyCQ5AidfjBOg7VI2sgkbpnKHPBGAoLQ15w', // 🔑 reemplazá con tu key
+    googleMapsApiKey: 'AIzaSyAozrV0W341d6lB422E-cyRquX4xnqSCOc', // 🔑 reemplazá con tu key
     libraries: ["places"],
   });
 
