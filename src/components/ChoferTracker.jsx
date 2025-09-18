@@ -15,22 +15,23 @@ export default function ChoferTracker({ choferId }) {
         const { latitude, longitude } = pos.coords;
 
         try {
-          // 1) Insertar en historial
-          await supabase.from("ubicaciones_historial").insert({
-            chofer_id: choferId,
-            lat: latitude,
-            lng: longitude,
-          });
+         // 1) Insertar en historial (siempre)
+await supabase.from("ubicaciones_historial").insert({
+  chofer_id: choferId,
+  lat: latitude,
+  lng: longitude,
+});
 
-          // 2) Guardar/actualizar en actuales
-          await supabase.from("ubicaciones_actuales").upsert(
-            {
-              chofer_id: choferId,
-              lat: latitude,
-              lng: longitude,
-            },
-            { onConflict: ["chofer_id"] }
-          );
+// 2) Guardar/actualizar en actuales
+await supabase.from("ubicaciones_actuales").upsert(
+  {
+    chofer_id: choferId,
+    lat: latitude,
+    lng: longitude,
+  },
+  { onConflict: ["chofer_id"] }
+);
+
 
           console.log("✅ Ubicación enviada:", latitude, longitude);
         } catch (error) {
