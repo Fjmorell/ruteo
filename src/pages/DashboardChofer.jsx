@@ -1,7 +1,7 @@
 import ChoferTracker from "../components/ChoferTracker";
 
 export default function DashboardChofer() {
-  // 👇 podés usar un UUID fijo de prueba o el ID real del chofer logueado
+  // 👇 reemplazá con el ID real de tu chofer en Supabase
   const choferId = "92ec589d-3741-4c75-9962-da46bcf0f67d";
 
   return (

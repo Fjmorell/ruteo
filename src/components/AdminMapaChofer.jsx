@@ -2,54 +2,53 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 
-const containerStyle = {
-  width: "100%",
-  height: "600px",
-};
-
+const containerStyle = { width: "100%", height: "600px" };
 const center = { lat: -27.4712, lng: -58.8367 };
 
 export default function AdminMapaChofer() {
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "TU_API_KEY_GOOGLE_MAPS",
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY,
     libraries: ["places"],
   });
 
-  const [choferes, setChoferes] = useState({}); // { choferId: {lat, lng, updated_at} }
+  const [choferes, setChoferes] = useState({});
 
   useEffect(() => {
-    // 🔹 Traer últimas ubicaciones al cargar
     const fetchUbicaciones = async () => {
       const { data, error } = await supabase
-        .from("ubicaciones_choferes")
-        .select("chofer_id, lat, lng, created_at")
-        .order("created_at", { ascending: false });
+        .from("ubicaciones_actuales")
+        .select("chofer_id, lat, lng, updated_at");
 
-      if (error) console.error(error);
-      else {
-        const ultimas = {};
+      if (!error) {
+        const mapa = {};
         data.forEach((u) => {
-          if (!ultimas[u.chofer_id]) {
-            ultimas[u.chofer_id] = u;
-          }
+          mapa[u.chofer_id] = {
+            lat: Number(u.lat),
+            lng: Number(u.lng),
+            updated_at: u.updated_at,
+          };
         });
-        setChoferes(ultimas);
+        setChoferes(mapa);
       }
     };
 
     fetchUbicaciones();
 
-    // 🔹 Escuchar cambios en tiempo real
+    // 🔴 Escuchar cambios en tiempo real
     const subscription = supabase
-      .channel("ubicaciones")
+      .channel("ubicaciones_actuales")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "ubicaciones_choferes" },
+        { event: "*", schema: "public", table: "ubicaciones_actuales" },
         (payload) => {
           const u = payload.new;
           setChoferes((prev) => ({
             ...prev,
-            [u.chofer_id]: u,
+            [u.chofer_id]: {
+              lat: Number(u.lat),
+              lng: Number(u.lng),
+              updated_at: u.updated_at,
+            },
           }));
         }
       )
@@ -65,7 +64,7 @@ export default function AdminMapaChofer() {
   return (
     <div className="bg-white shadow-md rounded-lg p-6">
       <h2 className="text-lg font-bold mb-4">🗺️ Seguimiento en tiempo real</h2>
-      <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={13}>
+      <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={14}>
         {Object.entries(choferes).map(([choferId, u]) => (
           <Marker
             key={choferId}

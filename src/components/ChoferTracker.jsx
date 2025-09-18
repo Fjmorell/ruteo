@@ -5,7 +5,6 @@ export default function ChoferTracker({ choferId }) {
   useEffect(() => {
     if (!choferId) return;
 
-    // Ver si el navegador soporta geolocalización
     if (!navigator.geolocation) {
       alert("Tu dispositivo no soporta geolocalización.");
       return;
@@ -15,26 +14,31 @@ export default function ChoferTracker({ choferId }) {
       async (pos) => {
         const { latitude, longitude } = pos.coords;
 
-        // Insertar en Supabase
-        const { error } = await supabase.from("ubicaciones_choferes").insert([
-          {
-            chofer_id: choferId,
-            lat: latitude,
-            lng: longitude,
-          },
-        ]);
+        // 1️⃣ Guardar en historial
+        await supabase.from("ubicaciones_historial").insert({
+          chofer_id: choferId,
+          lat: latitude,
+          lng: longitude,
+        });
 
-        if (error) {
-          console.error("❌ Error guardando ubicación:", error.message);
-        } else {
-          console.log("✅ Ubicación guardada:", latitude, longitude);
-        }
+        // 2️⃣ Guardar en tabla de últimas ubicaciones
+        await supabase
+          .from("ubicaciones_actuales")
+          .upsert(
+            {
+              chofer_id: choferId,
+              lat: latitude,
+              lng: longitude,
+            },
+            { onConflict: ["chofer_id"] }
+          );
+
+        console.log("✅ Ubicación enviada:", latitude, longitude);
       },
       (err) => console.error("Error GPS:", err),
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
     );
 
-    // Cleanup
     return () => navigator.geolocation.clearWatch(watchId);
   }, [choferId]);
 

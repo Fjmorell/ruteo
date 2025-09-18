@@ -19,24 +19,22 @@ const center = {
 
 export function MapaRutas() {
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: 'AIzaSyCQ5AidfjBOg7VI2sgkbpnKHPBGAoLQ15w', // 🔑 tu API KEY de Google Maps
+    googleMapsApiKey: 'AIzaSyCQ5AidfjBOg7VI2sgkbpnKHPBGAoLQ15w', // 🔑 reemplazá con tu key
     libraries: ["places"],
   });
 
   const [puntos, setPuntos] = useState(() => {
     const saved = localStorage.getItem("rutas_puntos");
-    return saved
-      ? JSON.parse(saved)
-      : [
-          { id: 1, nombre: "Cliente 1", direccion: "Junin 1224, Corrientes", activo: true },
-          { id: 2, nombre: "Cliente 2", direccion: "Salta 877, Corrientes", activo: true },
-          { id: 3, nombre: "Cliente 3", direccion: "España 1500, Corrientes", activo: true },
-        ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [entregados, setEntregados] = useState(() => {
     const saved = localStorage.getItem("rutas_entregados");
     return saved ? JSON.parse(saved) : [];
+  });
+
+  const [direccionInicio, setDireccionInicio] = useState(() => {
+    return localStorage.getItem("direccion_inicio") || "";
   });
 
   const [directions, setDirections] = useState(null);
@@ -54,16 +52,46 @@ export function MapaRutas() {
     localStorage.setItem("rutas_entregados", JSON.stringify(entregados));
   }, [entregados]);
 
+  useEffect(() => {
+    localStorage.setItem("direccion_inicio", direccionInicio);
+  }, [direccionInicio]);
+
   // Calcular rutas
   useEffect(() => {
     if (!isLoaded) return;
 
-    const geocoder = new window.google.maps.Geocoder();
     const activos = puntos.filter((p) => p.activo);
-    if (activos.length < 2) return;
+    if ((activos.length < 1 && !direccionInicio) || activos.length === 0) return;
 
-    Promise.all(
-      activos.map(
+    const geocoder = new window.google.maps.Geocoder();
+
+    const geocodePromesas = [];
+
+    // Geocodificar dirección de inicio
+    if (direccionInicio) {
+      geocodePromesas.push(
+        new Promise((resolve, reject) => {
+          geocoder.geocode({ address: direccionInicio }, (results, status) => {
+            if (status === "OK" && results[0]) {
+              resolve({
+                id: "origen",
+                nombre: "Inicio",
+                direccion: direccionInicio,
+                lat: results[0].geometry.location.lat(),
+                lng: results[0].geometry.location.lng(),
+              });
+            } else {
+              console.warn("Error geocodificando inicio:", status);
+              reject();
+            }
+          });
+        })
+      );
+    }
+
+    // Geocodificar puntos activos
+    geocodePromesas.push(
+      ...activos.map(
         (p) =>
           new Promise((resolve, reject) => {
             geocoder.geocode({ address: p.direccion }, (results, status) => {
@@ -80,12 +108,18 @@ export function MapaRutas() {
             });
           })
       )
-    ).then((result) => {
+    );
+
+    Promise.all(geocodePromesas).then((result) => {
       setUbicaciones(result);
 
-      const origin = result[0];
-      const destination = result[result.length - 1];
-      const waypoints = result.slice(1, -1).map((p) => ({
+      const origin = direccionInicio ? result[0] : result[0];
+      const destinos = direccionInicio ? result.slice(1) : result;
+
+      if (destinos.length < 1) return;
+
+      // 🚨 Todos los destinos entran como waypoints
+      const waypoints = destinos.map((p) => ({
         location: { lat: p.lat, lng: p.lng },
         stopover: true,
       }));
@@ -94,7 +128,7 @@ export function MapaRutas() {
       service.route(
         {
           origin: { lat: origin.lat, lng: origin.lng },
-          destination: { lat: destination.lat, lng: destination.lng },
+          destination: { lat: destinos[destinos.length - 1].lat, lng: destinos[destinos.length - 1].lng },
           waypoints,
           optimizeWaypoints: true,
           travelMode: window.google.maps.TravelMode.DRIVING,
@@ -118,11 +152,13 @@ export function MapaRutas() {
             });
 
             const orden = resultDirections.routes[0].waypoint_order;
+
+            // 🔹 Orden final: inicio + todos los clientes optimizados
             const ordenFinal = [
-              activos[0],
-              ...orden.map((i) => activos[i + 1]),
-              activos[activos.length - 1],
+              origin,
+              ...orden.map((i) => destinos[i]),
             ];
+
             setOrdenOptimizado(ordenFinal);
           } else {
             console.error("Error al calcular ruta:", status);
@@ -130,7 +166,7 @@ export function MapaRutas() {
         }
       );
     });
-  }, [puntos, isLoaded]);
+  }, [puntos, direccionInicio, isLoaded]);
 
   const togglePunto = (id) => {
     setPuntos(puntos.map((p) => (p.id === id ? { ...p, activo: !p.activo } : p)));
@@ -186,6 +222,17 @@ export function MapaRutas() {
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-600">
         📍 Puntos de Entrega
       </h2>
+
+      {/* Dirección de inicio */}
+      <div className="mb-4 flex gap-2">
+        <input
+          type="text"
+          value={direccionInicio}
+          placeholder="Dirección de inicio (ej: Depósito Central)"
+          onChange={(e) => setDireccionInicio(e.target.value)}
+          className="flex-1 border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
       {/* Lista de puntos */}
       <ul className="space-y-3 mb-6">
@@ -266,8 +313,10 @@ export function MapaRutas() {
           if (confirm("¿Seguro que querés reiniciar la ruta?")) {
             setPuntos([]);
             setEntregados([]);
+            setDireccionInicio("");
             localStorage.removeItem("rutas_puntos");
             localStorage.removeItem("rutas_entregados");
+            localStorage.removeItem("direccion_inicio");
             setDirections(null);
             setOrdenOptimizado([]);
             setResumenRuta({ distancia: "", duracion: "" });

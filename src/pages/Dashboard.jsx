@@ -6,11 +6,14 @@ import FormDocumentos from "../components/FormDocumentos";
 import { MapaRutas } from "../components/MapaRutas";
 import logo from "../assets/logo-logistica-argentina.png";
 import ChoferTracker from "../components/ChoferTracker";
-
+import MapaChofer from "../components/MapaChofer"; // 👈 nuevo componente
 
 export default function Dashboard() {
   const [active, setActive] = useState("datos");
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // 👇 UUID del chofer logueado (ahora está hardcodeado, después lo vas a traer del login)
+  const choferId = "b5a8f906-250d-458f-b955-76889c100ff4";
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -99,19 +102,18 @@ export default function Dashboard() {
             </button>
           </li>
           <li>
-  <button
-    className={`w-full text-left px-4 py-2 rounded ${
-      active === "seguimiento" ? "bg-blue-600" : "hover:bg-blue-700"
-    }`}
-    onClick={() => {
-      setActive("seguimiento");
-      setMenuOpen(false);
-    }}
-  >
-    Seguimiento
-  </button>
-</li>
-
+            <button
+              className={`w-full text-left px-4 py-2 rounded ${
+                active === "seguimiento" ? "bg-blue-600" : "hover:bg-blue-700"
+              }`}
+              onClick={() => {
+                setActive("seguimiento");
+                setMenuOpen(false);
+              }}
+            >
+              Seguimiento
+            </button>
+          </li>
         </ul>
       </aside>
 
@@ -125,9 +127,14 @@ export default function Dashboard() {
         {active === "documentos" && <FormDocumentos />}
         {active === "ruteo" && <MapaRutas />}
         {active === "seguimiento" && (
-  <ChoferTracker choferId="92ec589d-3741-4c75-9962-da46bcf0f67d" />
-)}
+          <div className="space-y-6">
+            {/* Chofer envía ubicación */}
+            <ChoferTracker choferId={choferId} />
 
+            {/* Chofer ve su ubicación en el mapa */}
+            <MapaChofer choferId={choferId} />
+          </div>
+        )}
       </main>
     </div>
   );
