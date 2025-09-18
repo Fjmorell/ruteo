@@ -19,7 +19,7 @@ const center = {
 
 export function MapaRutas() {
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: 'AIzaSyCQ5AidfjBOg7VI2sgkbpnKHPBGAoLQ15w', // 🔑 tu API KEY
+    googleMapsApiKey: 'AIzaSyCQ5AidfjBOg7VI2sgkbpnKHPBGAoLQ15w', // 🔑 tu API KEY de Google Maps
     libraries: ["places"],
   });
 
@@ -183,38 +183,47 @@ export function MapaRutas() {
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 max-w-6xl">
-      <h2 className="text-xl font-bold mb-4 text-gray-700">📍 Puntos de Entrega</h2>
+      <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-600">
+        📍 Puntos de Entrega
+      </h2>
 
       {/* Lista de puntos */}
-      <div className="space-y-2 mb-4">
+      <ul className="space-y-3 mb-6">
         {puntos.map((p) => (
-          <div
+          <li
             key={p.id}
-            className="flex items-center gap-2 text-sm text-gray-800"
+            className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 rounded-lg p-3 border border-gray-200 transition"
           >
-            <input
-              type="checkbox"
-              checked={p.activo}
-              onChange={() => togglePunto(p.id)}
-            />
-            <span
-              className={`flex-1 ${
-                entregados.includes(p.id)
-                  ? "line-through text-gray-400"
-                  : "text-gray-800"
-              }`}
-            >
-              {p.nombre} - {p.direccion}
-            </span>
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={p.activo}
+                onChange={() => togglePunto(p.id)}
+                className="w-5 h-5 text-blue-600 border-gray-300 rounded"
+              />
+              <span
+                className={`${
+                  entregados.includes(p.id)
+                    ? "line-through text-gray-400"
+                    : "text-gray-800"
+                }`}
+              >
+                {p.nombre} – {p.direccion}
+              </span>
+            </div>
             <button
               onClick={() => marcarComoEntregado(p.id)}
-              className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
+                entregados.includes(p.id)
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-green-500 hover:text-white"
+              }`}
             >
-              {entregados.includes(p.id) ? "✅" : "Entregado"}
+              {entregados.includes(p.id) ? "Entregado" : "Marcar"}
             </button>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
       {/* Agregar dirección */}
       <div className="mt-4 flex gap-2">
@@ -223,12 +232,12 @@ export function MapaRutas() {
           value={nuevaDireccion}
           placeholder="Ej: Av. 3 de Abril 900, Corrientes"
           onChange={(e) => setNuevaDireccion(e.target.value)}
-          className="flex-1 border rounded-lg p-2"
+          className="flex-1 border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-500"
         />
         <button
           type="button"
           onClick={agregarDireccion}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-1"
         >
           ➕ Agregar Dirección
         </button>
@@ -236,8 +245,16 @@ export function MapaRutas() {
 
       {/* Subir CSV */}
       <div className="mt-4">
-        <input type="file" accept=".csv" onChange={handleFileUpload} />
-        <small className="block text-gray-500 mt-1">
+        <input
+          type="file"
+          accept=".csv"
+          onChange={handleFileUpload}
+          className="block text-sm text-gray-600 file:mr-4 file:py-2 file:px-4
+                     file:rounded-lg file:border-0 file:text-sm
+                     file:font-semibold file:bg-blue-50 file:text-blue-600
+                     hover:file:bg-blue-100"
+        />
+        <small className="block mt-2 text-gray-500">
           📎 Subí un archivo CSV con columnas <strong>nombre</strong> y{" "}
           <strong>direccion</strong>
         </small>
@@ -257,7 +274,7 @@ export function MapaRutas() {
             setUbicaciones([]);
           }
         }}
-        className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+        className="mt-6 bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium shadow-sm flex items-center gap-2"
       >
         🧹 Limpiar Ruta
       </button>
@@ -283,47 +300,48 @@ export function MapaRutas() {
 
       {/* Resumen */}
       {ordenOptimizado.length > 0 && (
-  <div className="mt-6 bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
-    <h3 className="flex items-center gap-2 font-semibold text-xl text-gray-800 mb-4">
-      📦 Orden de Entregas Optimizado
-    </h3>
+        <div className="mt-6 bg-gray-50 shadow-md rounded-lg p-6 border border-gray-200">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+            📦 Orden de Entregas Optimizado
+          </h3>
 
-    <ol className="space-y-2">
-      {ordenOptimizado.map((p, index) => (
-        <li
-          key={p.id}
-          className={`flex items-center gap-3 p-3 rounded-lg shadow-sm ${
-            entregados.includes(p.id)
-              ? "bg-green-100 text-green-700 line-through"
-              : "bg-white text-gray-700"
-          }`}
-        >
-          <span className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded-full text-sm font-bold">
-            {index + 1}
-          </span>
-          <span className="flex-1">{p.nombre} - {p.direccion}</span>
-          {entregados.includes(p.id) && <span className="text-green-600">✅</span>}
-        </li>
-      ))}
-    </ol>
+          <ol className="list-decimal list-inside space-y-2 text-gray-700">
+            {ordenOptimizado.map((p) => (
+              <li
+                key={p.id}
+                className={`${
+                  entregados.includes(p.id)
+                    ? "line-through text-gray-400"
+                    : "text-gray-800"
+                }`}
+              >
+                {entregados.includes(p.id) ? "✅ " : ""} {p.nombre} - {p.direccion}
+              </li>
+            ))}
+          </ol>
 
-    <div className="flex items-center gap-6 mt-6">
-      <span className="flex items-center gap-2 text-blue-700 font-medium">
-        🛣️ Distancia total: 
-        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-          {resumenRuta.distancia}
-        </span>
-      </span>
-      <span className="flex items-center gap-2 text-purple-700 font-medium">
-        ⏱️ Tiempo estimado: 
-        <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full">
-          {resumenRuta.duracion}
-        </span>
-      </span>
-    </div>
-  </div>
-)}
+          {/* Distancia y Tiempo */}
+          <div className="mt-4 space-y-1 text-gray-700">
+            <p>🛣️ Distancia total: <strong>{resumenRuta.distancia}</strong></p>
+            <p>⏱️ Tiempo estimado: <strong>{resumenRuta.duracion}</strong></p>
+          </div>
 
+          {/* Barra de progreso */}
+          <div className="mt-6">
+            <p className="text-sm font-medium text-gray-600 mb-2">
+              Progreso: {entregados.length} de {ordenOptimizado.length} entregas completadas
+            </p>
+            <div className="w-full bg-gray-200 rounded-full h-4">
+              <div
+                className="bg-green-600 h-4 rounded-full transition-all duration-500"
+                style={{
+                  width: `${(entregados.length / ordenOptimizado.length) * 100}%`
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
