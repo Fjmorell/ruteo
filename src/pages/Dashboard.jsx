@@ -5,6 +5,8 @@ import FormBanco from "../components/FormBanco";
 import FormDocumentos from "../components/FormDocumentos";
 import { MapaRutas } from "../components/MapaRutas";
 import logo from "../assets/logo-logistica-argentina.png";
+import ChoferTracker from "../components/ChoferTracker";
+
 
 export default function Dashboard() {
   const [active, setActive] = useState("datos");
@@ -96,6 +98,20 @@ export default function Dashboard() {
               Ruteo
             </button>
           </li>
+          <li>
+  <button
+    className={`w-full text-left px-4 py-2 rounded ${
+      active === "seguimiento" ? "bg-blue-600" : "hover:bg-blue-700"
+    }`}
+    onClick={() => {
+      setActive("seguimiento");
+      setMenuOpen(false);
+    }}
+  >
+    Seguimiento
+  </button>
+</li>
+
         </ul>
       </aside>
 
@@ -108,6 +124,10 @@ export default function Dashboard() {
         {active === "banco" && <FormBanco />}
         {active === "documentos" && <FormDocumentos />}
         {active === "ruteo" && <MapaRutas />}
+        {active === "seguimiento" && (
+  <ChoferTracker choferId="92ec589d-3741-4c75-9962-da46bcf0f67d" />
+)}
+
       </main>
     </div>
   );
