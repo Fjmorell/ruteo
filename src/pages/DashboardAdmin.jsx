@@ -5,6 +5,8 @@ import { supabase } from "../lib/supabase";
 import { useNavigate, Link } from "react-router-dom";
 import FormCrearChofer from "../components/FormCrearChofer";
 import MapaChofer from "../components/MapaChofer";
+import MapaAdminGeneral from "../components/MapaAdminGeneral";
+
 
 export default function DashboardAdmin() {
   const [active, setActive] = useState("seguimiento");
@@ -174,47 +176,16 @@ export default function DashboardAdmin() {
         <h1 className="text-3xl font-bold mb-6">Dashboard del Admin</h1>
 
         {/* 🔹 Seguimiento */}
-        {active === "seguimiento" && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold">📍 Seguimiento en vivo</h2>
-            <p className="text-gray-600">Selecciona un chofer para ver su ubicación.</p>
+{active === "seguimiento" && (
+  <div className="space-y-6">
+    <h2 className="text-xl font-bold">📍 Seguimiento en vivo</h2>
+    <p className="text-gray-600">Mapa con todos los choferes en tiempo real.</p>
 
-            {/* Lista de choferes */}
-            <div className="bg-white shadow rounded p-4">
-              <ul className="divide-y">
-                {choferes.map((c) => (
-                  <li key={c.id} className="py-2 flex justify-between items-center">
-                    <span>
-                      {c.nombre} {c.apellido} — {c.telefono || "sin teléfono"}
-                    </span>
-                    <div className="space-x-2">
-                      <button
-                        onClick={() => setChoferSeleccionado(c.id)}
-                        className="bg-blue-600 text-white px-3 py-1 rounded"
-                      >
-                        Ver ubicación
-                      </button>
-                      <Link
-                        to={`/admin/chofer/${c.id}`}
-                        className="bg-gray-600 text-white px-3 py-1 rounded"
-                      >
-                        Detalle
-                      </Link>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+    {/* Mapa con todos los choferes */}
+    <MapaAdminGeneral />
+  </div>
+)}
 
-            {/* Mapa del chofer seleccionado */}
-            {choferSeleccionado && (
-              <div className="bg-white shadow rounded p-4">
-                <h3 className="text-lg font-bold mb-2">Ubicación en vivo</h3>
-                <MapaChofer choferId={choferSeleccionado} />
-              </div>
-            )}
-          </div>
-        )}
 
         {/* 🔹 Crear Chofer */}
         {active === "crearChofer" && (
