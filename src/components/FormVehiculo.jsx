@@ -1,70 +1,103 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-export default function FormVehiculo() {
-  const [form, setForm] = useState({
+export default function FormVehiculo({ choferId }) {
+  const [vehiculo, setVehiculo] = useState({
+    patente: "",
     marca: "",
     modelo: "",
-    patente: "",
-    color: "",
+    anio: "",
   });
+  const [loading, setLoading] = useState(true);
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // 🔹 Traer vehículo del chofer al cargar
+  useEffect(() => {
+    if (!choferId) return;
 
-  const handleSubmit = async (e) => {
+    const fetchVehiculo = async () => {
+      const { data, error } = await supabase
+        .from("vehiculos")
+        .select("patente, marca, modelo, anio")
+        .eq("chofer_id", choferId)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error cargando vehículo:", error.message);
+      } else if (data) {
+        setVehiculo(data);
+      }
+      setLoading(false);
+    };
+
+    fetchVehiculo();
+  }, [choferId]);
+
+  const handleChange = (e) => {
+    setVehiculo({ ...vehiculo, [e.target.name]: e.target.value });
+  };
+
+  // 🔹 Guardar / actualizar vehículo
+  const handleSave = async (e) => {
     e.preventDefault();
+    try {
+      // upsert = inserta si no existe, actualiza si ya existe
+      const { error } = await supabase.from("vehiculos").upsert({
+        chofer_id: choferId,
+        ...vehiculo,
+      });
 
-    const { error } = await supabase.from("vehiculos").insert([form]);
-
-    if (error) {
-      alert("❌ Error al guardar: " + error.message);
-    } else {
-      alert("✅ Datos del vehículo guardados");
-      setForm({ marca: "", modelo: "", patente: "", color: "" });
+      if (error) throw error;
+      alert("✅ Vehículo guardado con éxito");
+    } catch (err) {
+      alert("❌ Error al guardar vehículo: " + err.message);
     }
   };
 
+  if (loading) return <p>Cargando datos del vehículo...</p>;
+
   return (
     <form
-      onSubmit={handleSubmit}
-      className="bg-white shadow-md rounded-lg p-6 max-w-2xl"
+      onSubmit={handleSave}
+      className="bg-white shadow-md rounded-lg p-6 max-w-2xl space-y-4"
     >
-      <h2 className="text-xl font-bold mb-4 text-gray-700">Datos del Vehículo</h2>
+      <h2 className="text-xl font-bold text-gray-700">🚗 Datos del Vehículo</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input
-          name="marca"
-          value={form.marca}
-          onChange={handleChange}
-          placeholder="Marca"
-          className="border p-2 rounded-lg"
-        />
-        <input
-          name="modelo"
-          value={form.modelo}
-          onChange={handleChange}
-          placeholder="Modelo"
-          className="border p-2 rounded-lg"
-        />
-        <input
-          name="patente"
-          value={form.patente}
-          onChange={handleChange}
-          placeholder="Patente"
-          className="border p-2 rounded-lg"
-        />
-        <input
-          name="color"
-          value={form.color}
-          onChange={handleChange}
-          placeholder="Color"
-          className="border p-2 rounded-lg"
-        />
-      </div>
+      <input
+        type="text"
+        name="patente"
+        placeholder="Patente"
+        value={vehiculo.patente}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+        required
+      />
+      <input
+        type="text"
+        name="marca"
+        placeholder="Marca"
+        value={vehiculo.marca}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+      />
+      <input
+        type="text"
+        name="modelo"
+        placeholder="Modelo"
+        value={vehiculo.modelo}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+      />
+      <input
+        type="number"
+        name="anio"
+        placeholder="Año"
+        value={vehiculo.anio}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+      />
 
-      <button className="mt-4 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
-        Guardar
+      <button className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+        Guardar Vehículo
       </button>
     </form>
   );

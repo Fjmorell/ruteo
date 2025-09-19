@@ -1,13 +1,38 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-export default function FormBanco() {
+export default function FormBanco({ choferId }) {
   const [form, setForm] = useState({
     banco: "",
-    tipo_cuenta: "", // 👈 corregido: snake_case como en la BD
+    tipo_cuenta: "",
     cbu: "",
     alias: "",
+    cuil: "",
   });
+
+  const [loading, setLoading] = useState(true);
+
+  // 🔹 Precargar si ya tiene cuenta
+  useEffect(() => {
+    if (!choferId) return;
+
+    const fetchCuenta = async () => {
+      const { data, error } = await supabase
+        .from("cuentas_bancarias")
+        .select("banco, tipo_cuenta, cbu, alias, cuil")
+        .eq("chofer_id", choferId)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error cargando cuenta bancaria:", error.message);
+      } else if (data) {
+        setForm(data);
+      }
+      setLoading(false);
+    };
+
+    fetchCuenta();
+  }, [choferId]);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -15,22 +40,28 @@ export default function FormBanco() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const { error } = await supabase.from("cuentas_bancarias").insert([form]);
+    try {
+      const { error } = await supabase.from("cuentas_bancarias").upsert({
+        chofer_id: choferId,
+        ...form,
+      });
 
-    if (error) {
-      alert("❌ Error al guardar: " + error.message);
-    } else {
+      if (error) throw error;
+
       alert("✅ Datos bancarios guardados");
-      setForm({ banco: "", tipo_cuenta: "", cbu: "", alias: "" });
+    } catch (err) {
+      alert("❌ Error al guardar: " + err.message);
     }
   };
+
+  if (loading) return <p>Cargando datos bancarios...</p>;
 
   return (
     <form
       onSubmit={handleSubmit}
       className="bg-white shadow-md rounded-lg p-6 max-w-2xl"
     >
-      <h2 className="text-xl font-bold mb-4 text-gray-700">Cuenta Bancaria</h2>
+      <h2 className="text-xl font-bold mb-4 text-gray-700">🏦 Cuenta Bancaria</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Banco */}
@@ -44,8 +75,8 @@ export default function FormBanco() {
 
         {/* Tipo de Cuenta */}
         <select
-          name="tipo_cuenta" // 👈 corregido
-          value={form.tipo_cuenta} // 👈 corregido
+          name="tipo_cuenta"
+          value={form.tipo_cuenta}
           onChange={handleChange}
           className="border p-2 rounded-lg"
         >
@@ -72,6 +103,15 @@ export default function FormBanco() {
           value={form.alias}
           onChange={handleChange}
           placeholder="Alias"
+          className="border p-2 rounded-lg"
+        />
+
+        {/* CUIL */}
+        <input
+          name="cuil"
+          value={form.cuil}
+          onChange={handleChange}
+          placeholder="CUIL"
           className="border p-2 rounded-lg"
         />
       </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
-export default function FormDocumentos() {
+export default function FormDocumentos({ choferId }) {
   const [files, setFiles] = useState({
     fotoPerfil: null,
     carnet: null,
@@ -17,29 +17,34 @@ export default function FormDocumentos() {
     e.preventDefault();
 
     try {
-      const uploaded = {};
-
-      for (const [key, file] of Object.entries(files)) {
+      for (const [tipo, file] of Object.entries(files)) {
         if (!file) continue;
 
-        const path = `${key}/${Date.now()}-${file.name}`;
+        const path = `${choferId}/${tipo}/${Date.now()}-${file.name}`;
+
+        // 1. Subir archivo a Supabase Storage
         const { error: uploadError } = await supabase.storage
           .from("documentos")
           .upload(path, file);
 
         if (uploadError) throw uploadError;
 
+        // 2. Obtener URL pública
         const { data: urlData } = supabase.storage
           .from("documentos")
           .getPublicUrl(path);
 
-        uploaded[key] = urlData.publicUrl;
+        // 3. Guardar en la tabla documentos
+        const { error: insertError } = await supabase.from("documentos").insert([
+          {
+            chofer_id: choferId,
+            tipo,
+            url: urlData.publicUrl,
+          },
+        ]);
+
+        if (insertError) throw insertError;
       }
-
-      // Guardamos en la tabla documentos
-      const { error } = await supabase.from("documentos").insert([uploaded]);
-
-      if (error) throw error;
 
       alert("✅ Documentos subidos y guardados en Supabase");
     } catch (err) {
@@ -55,9 +60,20 @@ export default function FormDocumentos() {
       <h2 className="text-xl font-bold mb-4 text-gray-700">Documentos</h2>
 
       <div className="space-y-4">
-        <input type="file" name="fotoPerfil" onChange={handleFileChange} />
-        <input type="file" name="carnet" onChange={handleFileChange} />
-        <input type="file" name="seguro" onChange={handleFileChange} />
+        <label>
+          Foto de perfil:
+          <input type="file" name="fotoPerfil" onChange={handleFileChange} />
+        </label>
+
+        <label>
+          Carnet de conducir:
+          <input type="file" name="carnet" onChange={handleFileChange} />
+        </label>
+
+        <label>
+          Seguro:
+          <input type="file" name="seguro" onChange={handleFileChange} />
+        </label>
       </div>
 
       <button className="mt-6 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
