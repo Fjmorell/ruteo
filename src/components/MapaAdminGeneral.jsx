@@ -1,16 +1,16 @@
+// src/components/MapaAdminGeneral.jsx
 import { useEffect, useState } from "react";
-import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { supabase } from "../lib/supabase";
 
 const containerStyle = { width: "100%", height: "500px" };
 
-export default function MapaAdminGeneral() {
+export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY,
   });
 
   const [ubicaciones, setUbicaciones] = useState([]);
-  const [selectedChofer, setSelectedChofer] = useState(null);
 
   useEffect(() => {
     const fetchUbicaciones = async () => {
@@ -21,7 +21,10 @@ export default function MapaAdminGeneral() {
           lat,
           lng,
           updated_at,
-          choferes ( nombre, apellido, telefono )
+          choferes (
+            nombre,
+            apellido
+          )
         `);
 
       if (!error && data) setUbicaciones(data);
@@ -56,42 +59,39 @@ export default function MapaAdminGeneral() {
   if (ubicaciones.length === 0)
     return <p className="text-gray-500">No hay choferes con ubicación registrada</p>;
 
+  const ubicacionCentro = choferIdSeleccionado
+    ? ubicaciones.find((u) => u.chofer_id === choferIdSeleccionado)
+    : ubicaciones[0];
+
   return (
     <div className="bg-white shadow-md rounded-lg p-6">
-      <h2 className="text-lg font-bold mb-4">🗺️ Ubicación de todos los choferes</h2>
+      <h2 className="text-lg font-bold mb-4">
+        🗺️ {choferIdSeleccionado ? "Ubicación del chofer" : "Ubicación de todos los choferes"}
+      </h2>
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={{
-          lat: ubicaciones[0]?.lat || -27.4712,
-          lng: ubicaciones[0]?.lng || -58.8367,
+          lat: ubicacionCentro?.lat || -27.4712,
+          lng: ubicacionCentro?.lng || -58.8367,
         }}
-        zoom={13}
+        zoom={choferIdSeleccionado ? 15 : 13}
       >
         {ubicaciones.map((u) => (
           <Marker
             key={u.chofer_id}
             position={{ lat: u.lat, lng: u.lng }}
-            icon="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-            onClick={() => setSelectedChofer(u)}
+            label={{
+              text: `${u.choferes?.nombre || ""} ${u.choferes?.apellido || ""}`,
+              fontSize: "12px",
+              fontWeight: "bold",
+            }}
+            icon={
+              choferIdSeleccionado === u.chofer_id
+                ? "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                : "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+            }
           />
         ))}
-
-        {selectedChofer && (
-          <InfoWindow
-            position={{ lat: selectedChofer.lat, lng: selectedChofer.lng }}
-            onCloseClick={() => setSelectedChofer(null)}
-          >
-            <div>
-              <p className="font-bold">
-                {selectedChofer.choferes?.nombre} {selectedChofer.choferes?.apellido}
-              </p>
-              <p>📞 {selectedChofer.choferes?.telefono || "sin teléfono"}</p>
-              <p className="text-xs text-gray-500">
-                Última actualización: {new Date(selectedChofer.updated_at).toLocaleTimeString()}
-              </p>
-            </div>
-          </InfoWindow>
-        )}
       </GoogleMap>
     </div>
   );

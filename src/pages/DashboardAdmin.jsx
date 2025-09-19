@@ -179,12 +179,44 @@ export default function DashboardAdmin() {
 {active === "seguimiento" && (
   <div className="space-y-6">
     <h2 className="text-xl font-bold">📍 Seguimiento en vivo</h2>
-    <p className="text-gray-600">Mapa con todos los choferes en tiempo real.</p>
+    <p className="text-gray-600">Selecciona un chofer para centrar el mapa en él o ver todos juntos.</p>
 
-    {/* Mapa con todos los choferes */}
-    <MapaAdminGeneral />
+    {/* Lista de choferes */}
+    <div className="bg-white shadow rounded p-4">
+      <ul className="divide-y">
+        {choferes.map((c) => (
+          <li key={c.id} className="py-2 flex justify-between items-center">
+            <span>
+              {c.nombre} {c.apellido} — {c.telefono || "sin teléfono"}
+            </span>
+            <div className="space-x-2">
+              <button
+                onClick={() =>
+                  setChoferSeleccionado(
+                    choferSeleccionado === c.id ? null : c.id
+                  )
+                }
+                className="bg-blue-600 text-white px-3 py-1 rounded"
+              >
+                {choferSeleccionado === c.id ? "Ver todos" : "Ver ubicación"}
+              </button>
+              <Link
+                to={`/admin/chofer/${c.id}`}
+                className="bg-gray-600 text-white px-3 py-1 rounded"
+              >
+                Detalle
+              </Link>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    {/* Mapa con todos o uno solo */}
+    <MapaAdminGeneral choferIdSeleccionado={choferSeleccionado} />
   </div>
 )}
+
 
 
         {/* 🔹 Crear Chofer */}
