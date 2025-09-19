@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import FormCrearChofer from "../components/FormCrearChofer";
 
 const containerStyle = { width: "100%", height: "500px" };
 const center = { lat: -27.4712, lng: -58.8367 };
@@ -14,16 +15,18 @@ export default function DashboardAdmin() {
   const [choferSeleccionado, setChoferSeleccionado] = useState(null);
   const [ubicacion, setUbicacion] = useState(null);
 
-  // 🔹 Traer lista de choferes
+  // 🔹 Función para traer choferes
+  const fetchChoferes = async () => {
+    const { data, error } = await supabase
+      .from("choferes")
+      .select("id, nombre, apellido, telefono");
+
+    if (!error) setChoferes(data);
+    else console.error("Error cargando choferes:", error.message);
+  };
+
+  // 🔹 Al cargar la página, traemos choferes
   useEffect(() => {
-    const fetchChoferes = async () => {
-      const { data, error } = await supabase
-        .from("choferes")
-        .select("id, nombre, apellido, telefono");
-
-      if (!error) setChoferes(data);
-    };
-
     fetchChoferes();
   }, []);
 
@@ -71,7 +74,10 @@ export default function DashboardAdmin() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">📍 Panel de Choferes</h1>
+      <h1 className="text-2xl font-bold">📍 Panel de Administración de Choferes</h1>
+
+      {/* Formulario para crear chofer */}
+      <FormCrearChofer onCreated={fetchChoferes} />
 
       {/* Lista de choferes */}
       <div className="bg-white shadow-md rounded-lg p-4">

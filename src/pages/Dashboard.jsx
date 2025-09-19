@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import FormChofer from "../components/FormChofer";
 import FormVehiculo from "../components/FormVehiculo";
 import FormBanco from "../components/FormBanco";
@@ -6,14 +6,32 @@ import FormDocumentos from "../components/FormDocumentos";
 import { MapaRutas } from "../components/MapaRutas";
 import logo from "../assets/logo-logistica-argentina.png";
 import ChoferTracker from "../components/ChoferTracker";
-import MapaChofer from "../components/MapaChofer"; // 👈 nuevo componente
+import MapaChofer from "../components/MapaChofer";
+import { supabase } from "../lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const [active, setActive] = useState("datos");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [choferId, setChoferId] = useState(null);
+  const navigate = useNavigate();
 
-  // 👇 UUID del chofer logueado (ahora está hardcodeado, después lo vas a traer del login)
-  const choferId = "b5a8f906-250d-458f-b955-76889c100ff4";
+  // 🔹 Al cargar, buscamos el choferId del login
+  useEffect(() => {
+    const id = localStorage.getItem("choferId");
+    if (!id) {
+      navigate("/login"); // 👈 si no está logueado, mandamos a login
+    } else {
+      setChoferId(id);
+    }
+  }, [navigate]);
+
+  // 🔹 Logout (borra datos y vuelve a login)
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem("choferId");
+    navigate("/login");
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -32,8 +50,14 @@ export default function Dashboard() {
           ${menuOpen ? "translate-x-0" : "-translate-x-full"} 
           md:translate-x-0 transition-transform duration-300 ease-in-out z-40`}
       >
-        <div className="mb-6 flex items-center justify-center">
+        <div className="mb-6 flex flex-col items-center justify-center">
           <img src={logo} alt="Logo Logística Argentina" className="w-32 h-auto" />
+          <button
+            onClick={handleLogout}
+            className="mt-4 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+          >
+            Cerrar sesión
+          </button>
         </div>
         <ul className="space-y-2">
           <li>
@@ -121,19 +145,25 @@ export default function Dashboard() {
       <main className="flex-1 p-8 md:ml-0 ml-0 md:mt-0 mt-16">
         <h1 className="text-3xl font-bold mb-6">Dashboard del Chofer</h1>
 
-        {active === "datos" && <FormChofer />}
-        {active === "vehiculo" && <FormVehiculo />}
-        {active === "banco" && <FormBanco />}
-        {active === "documentos" && <FormDocumentos />}
-        {active === "ruteo" && <MapaRutas />}
-        {active === "seguimiento" && (
-          <div className="space-y-6">
-            {/* Chofer envía ubicación */}
-            <ChoferTracker choferId={choferId} />
+        {!choferId ? (
+          <p className="text-gray-600">Cargando chofer...</p>
+        ) : (
+          <>
+            {active === "datos" && <FormChofer />}
+            {active === "vehiculo" && <FormVehiculo />}
+            {active === "banco" && <FormBanco />}
+            {active === "documentos" && <FormDocumentos />}
+            {active === "ruteo" && <MapaRutas />}
+            {active === "seguimiento" && (
+              <div className="space-y-6">
+                {/* Chofer envía ubicación */}
+                <ChoferTracker choferId={choferId} />
 
-            {/* Chofer ve su ubicación en el mapa */}
-            <MapaChofer choferId={choferId} />
-          </div>
+                {/* Chofer ve su ubicación en el mapa */}
+                <MapaChofer choferId={choferId} />
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
