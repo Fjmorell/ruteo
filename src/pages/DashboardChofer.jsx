@@ -7,6 +7,7 @@ import { MapaRutas } from "../components/MapaRutas";
 import logo from "../assets/logo-logistica-argentina.png";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
+import useLiveLocation from "../hooks/useLiveLocation"; // ✅ nuevo hook
 
 export default function DashboardChofer() {
   const [active, setActive] = useState("datos");
@@ -22,6 +23,9 @@ export default function DashboardChofer() {
       setChoferId(id);
     }
   }, [navigate]);
+
+  // ✅ activar ubicación en vivo cada 15 segundos
+  useLiveLocation(choferId, 15000);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
