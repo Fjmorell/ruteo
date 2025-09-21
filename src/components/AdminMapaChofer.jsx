@@ -1,3 +1,4 @@
+// src/components/AdminMapaChofer.jsx
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
@@ -17,14 +18,16 @@ export default function AdminMapaChofer() {
     const fetchUbicaciones = async () => {
       const { data, error } = await supabase
         .from("ubicaciones_actuales")
-        .select("chofer_id, lat, lng, updated_at");
+        .select("chofer_id, lat, lng, updated_at, choferes (nombre, apellido)");
 
-      if (!error) {
+      if (!error && data) {
         const mapa = {};
         data.forEach((u) => {
           mapa[u.chofer_id] = {
             lat: Number(u.lat),
             lng: Number(u.lng),
+            nombre: u.choferes?.nombre || "Chofer",
+            apellido: u.choferes?.apellido || "",
             updated_at: u.updated_at,
           };
         });
@@ -42,14 +45,18 @@ export default function AdminMapaChofer() {
         { event: "*", schema: "public", table: "ubicaciones_actuales" },
         (payload) => {
           const u = payload.new;
-          setChoferes((prev) => ({
-            ...prev,
-            [u.chofer_id]: {
-              lat: Number(u.lat),
-              lng: Number(u.lng),
-              updated_at: u.updated_at,
-            },
-          }));
+          setChoferes((prev) => {
+            const anterior = prev[u.chofer_id] || {};
+            return {
+              ...prev,
+              [u.chofer_id]: {
+                ...anterior, // 👈 mantiene nombre y apellido
+                lat: Number(u.lat),
+                lng: Number(u.lng),
+                updated_at: u.updated_at,
+              },
+            };
+          });
         }
       )
       .subscribe();
@@ -69,7 +76,7 @@ export default function AdminMapaChofer() {
           <Marker
             key={choferId}
             position={{ lat: u.lat, lng: u.lng }}
-            label={`Chofer ${choferId.substring(0, 4)}`}
+            label={`${u.nombre || "Chofer"}`}
             icon="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
           />
         ))}
