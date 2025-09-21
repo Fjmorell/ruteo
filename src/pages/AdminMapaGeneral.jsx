@@ -36,20 +36,39 @@ export default function AdminMapaGeneral() {
 
     fetchUbicaciones();
 
-    // 🔴 Suscripción en tiempo real
-    const subscription = supabase
-      .channel("ubicaciones_actuales")
+    // 🔴 Suscripción en tiempo real (INSERT + UPDATE)
+    const channel = supabase
+      .channel("ubicaciones_admin")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "ubicaciones_actuales" },
+        { event: "INSERT", schema: "public", table: "ubicaciones_actuales" },
         (payload) => {
+          console.log("➕ Nuevo chofer:", payload.new);
+          const u = payload.new;
+          setChoferes((prev) => ({
+            ...prev,
+            [u.chofer_id]: {
+              lat: Number(u.lat),
+              lng: Number(u.lng),
+              updated_at: u.updated_at,
+              // 👇 si ya estaba en estado, mantiene nombre/apellido
+              ...(prev[u.chofer_id] || {}),
+            },
+          }));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "ubicaciones_actuales" },
+        (payload) => {
+          console.log("♻️ Actualización chofer:", payload.new);
           const u = payload.new;
           setChoferes((prev) => {
             const anterior = prev[u.chofer_id] || {};
             return {
               ...prev,
               [u.chofer_id]: {
-                ...anterior, // 👈 mantiene nombre y apellido previos
+                ...anterior, // 👈 mantiene nombre/apellido
                 lat: Number(u.lat),
                 lng: Number(u.lng),
                 updated_at: u.updated_at,
@@ -60,7 +79,9 @@ export default function AdminMapaGeneral() {
       )
       .subscribe();
 
-    return () => supabase.removeChannel(subscription);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (!isLoaded) return <p>Cargando mapa...</p>;
