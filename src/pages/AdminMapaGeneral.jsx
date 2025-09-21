@@ -1,3 +1,4 @@
+// src/pages/AdminMapaGeneral.jsx
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
@@ -43,16 +44,18 @@ export default function AdminMapaGeneral() {
         { event: "*", schema: "public", table: "ubicaciones_actuales" },
         (payload) => {
           const u = payload.new;
-          setChoferes((prev) => ({
-            ...prev,
-            [u.chofer_id]: {
-              lat: Number(u.lat),
-              lng: Number(u.lng),
-              nombre: u.nombre || "Chofer",
-              apellido: u.apellido || "",
-              updated_at: u.updated_at,
-            },
-          }));
+          setChoferes((prev) => {
+            const anterior = prev[u.chofer_id] || {};
+            return {
+              ...prev,
+              [u.chofer_id]: {
+                ...anterior, // 👈 mantiene nombre y apellido previos
+                lat: Number(u.lat),
+                lng: Number(u.lng),
+                updated_at: u.updated_at,
+              },
+            };
+          });
         }
       )
       .subscribe();
