@@ -1,3 +1,4 @@
+// src/pages/DashboardChofer.jsx
 import { useState, useEffect } from "react";
 import FormChofer from "../components/FormChofer";
 import FormVehiculo from "../components/FormVehiculo";
@@ -7,7 +8,8 @@ import { MapaRutas } from "../components/MapaRutas";
 import logo from "../assets/logo-logistica-argentina.png";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
-import useLiveLocation from "../hooks/useLiveLocation"; // ✅ nuevo hook
+import useLiveLocation from "../hooks/useLiveLocation"; 
+import { Preferences } from "@capacitor/preferences"; // ✅ Usamos Preferences
 
 export default function DashboardChofer() {
   const [active, setActive] = useState("datos");
@@ -16,12 +18,15 @@ export default function DashboardChofer() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const id = localStorage.getItem("choferId");
-    if (!id) {
-      navigate("/login");
-    } else {
-      setChoferId(id);
-    }
+    const loadChoferId = async () => {
+      const { value } = await Preferences.get({ key: "choferId" });
+      if (!value) {
+        navigate("/login");
+      } else {
+        setChoferId(value);
+      }
+    };
+    loadChoferId();
   }, [navigate]);
 
   // ✅ activar ubicación en vivo cada 15 segundos
@@ -29,7 +34,7 @@ export default function DashboardChofer() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem("choferId");
+    await Preferences.remove({ key: "choferId" }); // ✅ limpiar Preferences
     navigate("/login");
   };
 

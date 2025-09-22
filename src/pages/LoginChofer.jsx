@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
+import { Preferences } from "@capacitor/preferences"; // 👈 IMPORTANTE
 
 export default function LoginChofer() {
   const [email, setEmail] = useState("");
@@ -22,12 +23,15 @@ export default function LoginChofer() {
 
       if (error) throw error;
 
-      // 👤 Guardamos el choferId para usarlo en el dashboard
+      // 👤 Guardamos el choferId en Preferences
       const userId = data.user.id;
-      localStorage.setItem("choferId", userId);
+      await Preferences.set({
+        key: "choferId",
+        value: userId,
+      });
 
       setMensaje("✅ Login exitoso, redirigiendo...");
-      navigate("/dashboard"); // 👈 te lleva al dashboard
+      navigate("/dashboard");
     } catch (err) {
       setMensaje("❌ Error: " + err.message);
     } finally {

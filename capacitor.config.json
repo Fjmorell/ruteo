@@ -1,0 +1,11 @@
+{
+  "appId": "com.logistica.ruteo",
+  "appName": "Ruteo de Choferes",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}
