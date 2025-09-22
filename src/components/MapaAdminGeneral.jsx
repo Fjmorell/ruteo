@@ -13,7 +13,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const [ubicaciones, setUbicaciones] = useState([]);
   const mapRef = useRef(null);
 
-  // ✅ chofer logueado
+  // ✅ chofer logueado (si existe en este navegador)
   const choferIdLogueado = localStorage.getItem("choferId");
 
   useEffect(() => {
@@ -89,12 +89,12 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         {ubicaciones.map((u) => {
           let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ por defecto gris
 
-          // 🟢 chofer logueado
-          if (choferIdLogueado === u.chofer_id) {
+          // 🟢 chofer logueado (solo si existe en este navegador)
+          if (choferIdLogueado && choferIdLogueado === u.chofer_id) {
             icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
           }
 
-          // 🔴 chofer seleccionado
+          // 🔴 chofer seleccionado (tiene prioridad sobre el verde)
           if (choferIdSeleccionado === u.chofer_id) {
             icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
           }
