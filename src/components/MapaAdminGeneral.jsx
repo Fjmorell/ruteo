@@ -81,7 +81,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
       <GoogleMap
         onLoad={(map) => (mapRef.current = map)}
         mapContainerStyle={containerStyle}
-        center={{ lat: -27.4712, lng: -58.8367 }} // 📌 default Corrientes
+        center={{ lat: -27.4712, lng: -58.8367 }}
         zoom={13}
       >
         {ubicaciones.map((u) => {
@@ -108,7 +108,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
                 fontSize: "12px",
                 fontWeight: "bold",
               }}
-              icon={icon}
+              icon={icon} // ✅ Solo usamos esta
             />
           );
         })}
