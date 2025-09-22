@@ -60,15 +60,18 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
       ubicaciones.forEach((u) => bounds.extend({ lat: u.lat, lng: u.lng }));
       mapRef.current.fitBounds(bounds);
     }
+    if (choferIdSeleccionado && mapRef.current) {
+      const chofer = ubicaciones.find((u) => u.chofer_id === choferIdSeleccionado);
+      if (chofer) {
+        mapRef.current.setCenter({ lat: chofer.lat, lng: chofer.lng });
+        mapRef.current.setZoom(15);
+      }
+    }
   }, [ubicaciones, choferIdSeleccionado]);
 
   if (!isLoaded) return <p>Cargando mapa...</p>;
   if (ubicaciones.length === 0)
     return <p className="text-gray-500">No hay choferes con ubicación registrada</p>;
-
-  const ubicacionCentro = choferIdSeleccionado
-    ? ubicaciones.find((u) => u.chofer_id === choferIdSeleccionado)
-    : ubicaciones[0];
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6">
@@ -78,14 +81,11 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
       <GoogleMap
         onLoad={(map) => (mapRef.current = map)}
         mapContainerStyle={containerStyle}
-        center={{
-          lat: ubicacionCentro?.lat || -27.4712,
-          lng: ubicacionCentro?.lng || -58.8367,
-        }}
-        zoom={choferIdSeleccionado ? 15 : 13}
+        center={{ lat: -27.4712, lng: -58.8367 }} // 📌 default Corrientes
+        zoom={13}
       >
         {ubicaciones.map((u) => {
-          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ Inactivo por defecto
+          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ Inactivo
 
           if (u.activo) {
             icon = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"; // 🔵 Activo
@@ -96,7 +96,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
           }
 
           if (choferIdSeleccionado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // 🔴 Seleccionado (máxima prioridad)
+            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // 🔴 Seleccionado
           }
 
           return (
