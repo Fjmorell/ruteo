@@ -1,6 +1,7 @@
 {
   "short_name": "Ruteo",
   "name": "Ruteo de Choferes",
+  "description": "Aplicación de logística para choferes y administradores con seguimiento en tiempo real.",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -13,8 +14,11 @@
       "type": "image/png"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "background_color": "#ffffff",
   "theme_color": "#1976d2",
-  "background_color": "#ffffff"
+  "orientation": "portrait-primary",
+  "id": "/"
 }
