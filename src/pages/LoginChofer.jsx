@@ -1,7 +1,8 @@
+// src/pages/LoginChofer.jsx
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
-import { Preferences } from "@capacitor/preferences"; // 👈 IMPORTANTE
+import { Preferences } from "@capacitor/preferences";
 
 export default function LoginChofer() {
   const [email, setEmail] = useState("");
@@ -20,15 +21,15 @@ export default function LoginChofer() {
         email,
         password,
       });
-
       if (error) throw error;
 
-      // 👤 Guardamos el choferId en Preferences
       const userId = data.user.id;
-      await Preferences.set({
-        key: "choferId",
-        value: userId,
-      });
+
+      // ✅ Guardar choferId en Preferences
+      await Preferences.set({ key: "choferId", value: userId });
+
+      // ✅ Marcar chofer como activo en Supabase
+      await supabase.from("choferes").update({ activo: true }).eq("id", userId);
 
       setMensaje("✅ Login exitoso, redirigiendo...");
       navigate("/dashboard");
@@ -43,7 +44,6 @@ export default function LoginChofer() {
     <div className="flex items-center justify-center h-screen bg-gray-100">
       <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center mb-4">🚚 Login Chofer</h1>
-
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
             type="email"
@@ -61,7 +61,6 @@ export default function LoginChofer() {
             className="w-full p-2 border rounded"
             required
           />
-
           <button
             type="submit"
             disabled={loading}
@@ -70,7 +69,6 @@ export default function LoginChofer() {
             {loading ? "Ingresando..." : "Ingresar"}
           </button>
         </form>
-
         {mensaje && <p className="mt-4 text-center">{mensaje}</p>}
       </div>
     </div>

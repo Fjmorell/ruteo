@@ -13,9 +13,6 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const [ubicaciones, setUbicaciones] = useState([]);
   const mapRef = useRef(null);
 
-  // ✅ chofer logueado (si existe en este navegador)
-  const choferIdLogueado = localStorage.getItem("choferId");
-
   useEffect(() => {
     const fetchUbicaciones = async () => {
       const { data, error } = await supabase
@@ -27,6 +24,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
 
     fetchUbicaciones();
 
+    // 🔴 Suscripción a cambios en ubicaciones
     const channel = supabase
       .channel("ubicaciones_admin")
       .on(
@@ -87,16 +85,14 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         zoom={choferIdSeleccionado ? 15 : 13}
       >
         {ubicaciones.map((u) => {
-          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ por defecto gris
+          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ Inactivo
 
-          // 🟢 chofer logueado (solo si existe en este navegador)
-          if (choferIdLogueado && choferIdLogueado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+          if (u.activo) {
+            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png"; // 🟢 Activo
           }
 
-          // 🔴 chofer seleccionado (tiene prioridad sobre el verde)
           if (choferIdSeleccionado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // 🔴 Seleccionado
           }
 
           return (
@@ -116,9 +112,9 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
 
       {/* 📌 Leyenda */}
       <div className="mt-4 text-sm text-gray-600">
-        <p>🟢 Chofer logueado</p>
+        <p>🟢 Chofer logueado (activo)</p>
         <p>🔴 Chofer seleccionado</p>
-        <p>⚪ Otros choferes</p>
+        <p>⚪ Chofer inactivo</p>
       </div>
     </div>
   );

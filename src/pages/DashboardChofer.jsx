@@ -32,11 +32,16 @@ export default function DashboardChofer() {
   // ✅ activar ubicación en vivo cada 15 segundos
   useLiveLocation(choferId, 15000);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    await Preferences.remove({ key: "choferId" }); // ✅ limpiar Preferences
-    navigate("/login");
-  };
+ const handleLogout = async () => {
+  if (choferId) {
+    // ✅ Marcar chofer como inactivo en Supabase
+    await supabase.from("choferes").update({ activo: false }).eq("id", choferId);
+  }
+
+  await supabase.auth.signOut();
+  await Preferences.remove({ key: "choferId" }); 
+  navigate("/login");
+};
 
   return (
     <div className="flex min-h-screen bg-gray-100">
