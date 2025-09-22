@@ -13,6 +13,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const [ubicaciones, setUbicaciones] = useState([]);
   const mapRef = useRef(null);
 
+  // ⚡ chofer logueado (si existe en este navegador)
   const choferIdLogueado = localStorage.getItem("choferId");
 
   useEffect(() => {
@@ -25,6 +26,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
 
     fetchUbicaciones();
 
+    // 🔄 Escuchar cambios en ubicaciones
     const channel = supabase
       .channel("ubicaciones_admin")
       .on(
@@ -54,6 +56,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     };
   }, []);
 
+  // 📍 Ajustar mapa según selección
   useEffect(() => {
     if (!choferIdSeleccionado && ubicaciones.length > 0 && mapRef.current) {
       const bounds = new window.google.maps.LatLngBounds();
@@ -85,6 +88,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         zoom={13}
       >
         {ubicaciones.map((u) => {
+          // 🎨 Color por prioridad
           let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ Inactivo
 
           if (u.activo) {
@@ -108,7 +112,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
                 fontSize: "12px",
                 fontWeight: "bold",
               }}
-              icon={icon} // ✅ Solo usamos esta
+              icon={icon}
             />
           );
         })}
