@@ -11,6 +11,23 @@ export default function ChoferTracker({ choferId }) {
       return;
     }
 
+    let wakeLock = null;
+
+    // 🔒 Activar Wake Lock para que la pantalla no se apague
+    const activarWakeLock = async () => {
+      try {
+        if ("wakeLock" in navigator) {
+          wakeLock = await navigator.wakeLock.request("screen");
+          console.log("🔒 Wake Lock activado");
+        }
+      } catch (err) {
+        console.error("❌ No se pudo activar Wake Lock:", err.message);
+      }
+    };
+
+    activarWakeLock();
+
+    // 🔵 Suscripción de ubicación en vivo
     const watchId = navigator.geolocation.watchPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -52,7 +69,14 @@ export default function ChoferTracker({ choferId }) {
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
     );
 
-    return () => navigator.geolocation.clearWatch(watchId);
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+      if (wakeLock) {
+        wakeLock.release().then(() => {
+          console.log("🔓 Wake Lock liberado");
+        });
+      }
+    };
   }, [choferId]);
 
   return (
