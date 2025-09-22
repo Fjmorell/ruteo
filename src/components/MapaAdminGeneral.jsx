@@ -24,7 +24,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
 
     fetchUbicaciones();
 
-    // 🔴 Suscripción a cambios en ubicaciones
+    // 🔄 Suscripción en tiempo real
     const channel = supabase
       .channel("ubicaciones_admin")
       .on(
@@ -54,6 +54,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     };
   }, []);
 
+  // 📌 Ajustar zoom automáticamente si no hay chofer seleccionado
   useEffect(() => {
     if (!choferIdSeleccionado && ubicaciones.length > 0 && mapRef.current) {
       const bounds = new window.google.maps.LatLngBounds();
@@ -85,14 +86,13 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         zoom={choferIdSeleccionado ? 15 : 13}
       >
         {ubicaciones.map((u) => {
-          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ Inactivo
+          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ inactivo
 
           if (u.activo) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png"; // 🟢 Activo
+            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png"; // 🟢 activo
           }
-
           if (choferIdSeleccionado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // 🔴 Seleccionado
+            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // 🔴 seleccionado
           }
 
           return (
@@ -112,7 +112,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
 
       {/* 📌 Leyenda */}
       <div className="mt-4 text-sm text-gray-600">
-        <p>🟢 Chofer logueado (activo)</p>
+        <p>🟢 Chofer activo (logueado)</p>
         <p>🔴 Chofer seleccionado</p>
         <p>⚪ Chofer inactivo</p>
       </div>
