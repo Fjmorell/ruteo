@@ -1,5 +1,5 @@
 // src/components/MapaAdminGeneral.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { supabase } from "../lib/supabase";
 
@@ -11,40 +11,41 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   });
 
   const [ubicaciones, setUbicaciones] = useState([]);
+  const mapRef = useRef(null);
 
+  // 📡 Cargar ubicaciones iniciales
   useEffect(() => {
     const fetchUbicaciones = async () => {
       const { data, error } = await supabase
-        .from("ubicaciones_actuales")
-        .select(`
-          chofer_id,
-          lat,
-          lng,
-          updated_at,
-          choferes (
-            nombre,
-            apellido
-          )
-        `);
+        .from("vista_choferes_ubicaciones") // 👈 mejor usar la vista que une chofer + ubicación
+        .select("*");
 
       if (!error && data) setUbicaciones(data);
     };
 
     fetchUbicaciones();
 
+    // 🔄 Suscripción en tiempo real
     const channel = supabase
       .channel("ubicaciones_admin")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "ubicaciones_actuales" },
-        (payload) => {
+        async (payload) => {
           if (payload.new) {
-            setUbicaciones((prev) => {
-              const filtered = prev.filter(
-                (u) => u.chofer_id !== payload.new.chofer_id
-              );
-              return [...filtered, payload.new];
-            });
+            // Buscar datos completos desde la vista
+            const { data } = await supabase
+              .from("vista_choferes_ubicaciones")
+              .select("*")
+              .eq("chofer_id", payload.new.chofer_id)
+              .single();
+
+            if (data) {
+              setUbicaciones((prev) => {
+                const filtered = prev.filter((u) => u.chofer_id !== data.chofer_id);
+                return [...filtered, data];
+              });
+            }
           }
         }
       )
@@ -54,6 +55,15 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // 🗺️ Ajustar mapa automáticamente si no hay chofer seleccionado
+  useEffect(() => {
+    if (!choferIdSeleccionado && ubicaciones.length > 0 && mapRef.current) {
+      const bounds = new window.google.maps.LatLngBounds();
+      ubicaciones.forEach((u) => bounds.extend({ lat: u.lat, lng: u.lng }));
+      mapRef.current.fitBounds(bounds);
+    }
+  }, [ubicaciones, choferIdSeleccionado]);
 
   if (!isLoaded) return <p>Cargando mapa...</p>;
   if (ubicaciones.length === 0)
@@ -69,6 +79,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         🗺️ {choferIdSeleccionado ? "Ubicación del chofer" : "Ubicación de todos los choferes"}
       </h2>
       <GoogleMap
+        onLoad={(map) => (mapRef.current = map)}
         mapContainerStyle={containerStyle}
         center={{
           lat: ubicacionCentro?.lat || -27.4712,
@@ -81,7 +92,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
             key={u.chofer_id}
             position={{ lat: u.lat, lng: u.lng }}
             label={{
-              text: `${u.choferes?.nombre || ""} ${u.choferes?.apellido || ""}`,
+              text: `${u.nombre || ""} ${u.apellido || ""}`,
               fontSize: "12px",
               fontWeight: "bold",
             }}
