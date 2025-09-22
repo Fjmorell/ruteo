@@ -13,18 +13,19 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const [ubicaciones, setUbicaciones] = useState([]);
   const mapRef = useRef(null);
 
+  // ✅ chofer logueado (desde local storage / preferences)
+  const choferIdLogueado = localStorage.getItem("choferId");
+
   useEffect(() => {
     const fetchUbicaciones = async () => {
       const { data, error } = await supabase
         .from("vista_choferes_ubicaciones")
         .select("*");
-
       if (!error && data) setUbicaciones(data);
     };
 
     fetchUbicaciones();
 
-    // 🔄 Suscripción en tiempo real
     const channel = supabase
       .channel("ubicaciones_admin")
       .on(
@@ -54,7 +55,6 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     };
   }, []);
 
-  // 📌 Ajustar zoom automáticamente si no hay chofer seleccionado
   useEffect(() => {
     if (!choferIdSeleccionado && ubicaciones.length > 0 && mapRef.current) {
       const bounds = new window.google.maps.LatLngBounds();
@@ -86,13 +86,21 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         zoom={choferIdSeleccionado ? 15 : 13}
       >
         {ubicaciones.map((u) => {
-          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ inactivo
+          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ inactivo por defecto
 
-          if (u.activo) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png"; // 🟢 activo
+          // 🟢 chofer logueado
+          if (choferIdLogueado && choferIdLogueado === u.chofer_id) {
+            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
           }
+
+          // 🔴 chofer seleccionado (tiene prioridad sobre el logueado)
           if (choferIdSeleccionado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // 🔴 seleccionado
+            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+          }
+
+          // ✅ usar directamente el campo activo de la vista
+          if (!u.activo) {
+            icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png";
           }
 
           return (
