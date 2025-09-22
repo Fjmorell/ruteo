@@ -13,7 +13,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const [ubicaciones, setUbicaciones] = useState([]);
   const mapRef = useRef(null);
 
-  // ✅ obtener el chofer logueado desde localStorage
+  // ✅ chofer logueado
   const choferIdLogueado = localStorage.getItem("choferId");
 
   useEffect(() => {
@@ -87,16 +87,16 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         zoom={choferIdSeleccionado ? 15 : 13}
       >
         {ubicaciones.map((u) => {
-          let icon = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ por defecto gris
 
-          // 🔴 si es el seleccionado → rojo
-          if (choferIdSeleccionado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
-          }
-
-          // 🟢 si es el chofer logueado → verde
+          // 🟢 chofer logueado
           if (choferIdLogueado === u.chofer_id) {
             icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+          }
+
+          // 🔴 chofer seleccionado
+          if (choferIdSeleccionado === u.chofer_id) {
+            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
           }
 
           return (
@@ -113,6 +113,13 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
           );
         })}
       </GoogleMap>
+
+      {/* 📌 Leyenda */}
+      <div className="mt-4 text-sm text-gray-600">
+        <p>🟢 Chofer logueado</p>
+        <p>🔴 Chofer seleccionado</p>
+        <p>⚪ Otros choferes</p>
+      </div>
     </div>
   );
 }
