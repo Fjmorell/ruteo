@@ -8,7 +8,6 @@
     <!-- 📍 Permisos de ubicación -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- 👇 Necesario para enviar ubicación incluso con la app cerrada -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- 🔧 Servicios en primer plano -->
@@ -38,7 +37,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 📂 FileProvider (para compartir archivos si hace falta) -->
+        <!-- 📂 FileProvider -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -49,7 +48,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- 📡 Servicio de ubicación en segundo plano -->
+        <!-- 📡 Servicio de ubicación -->
         <service
             android:name=".LocationService"
             android:enabled="true"
