@@ -13,7 +13,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const [ubicaciones, setUbicaciones] = useState([]);
   const mapRef = useRef(null);
 
-  // ⚡ chofer logueado (si existe en este navegador)
+  // ✅ chofer logueado en este navegador
   const choferIdLogueado = localStorage.getItem("choferId");
 
   useEffect(() => {
@@ -26,7 +26,6 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
 
     fetchUbicaciones();
 
-    // 🔄 Escuchar cambios en ubicaciones
     const channel = supabase
       .channel("ubicaciones_admin")
       .on(
@@ -56,7 +55,6 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     };
   }, []);
 
-  // 📍 Ajustar mapa según selección
   useEffect(() => {
     if (!choferIdSeleccionado && ubicaciones.length > 0 && mapRef.current) {
       const bounds = new window.google.maps.LatLngBounds();
@@ -88,19 +86,21 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         zoom={13}
       >
         {ubicaciones.map((u) => {
-          // 🎨 Color por prioridad
           let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ Inactivo
 
+          // 🔵 Activo
           if (u.activo) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"; // 🔵 Activo
+            icon = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
           }
 
+          // 🟢 Logueado en este navegador
           if (choferIdLogueado && choferIdLogueado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png"; // 🟢 Logueado
+            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
           }
 
+          // 🔴 Seleccionado → prioridad máxima
           if (choferIdSeleccionado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // 🔴 Seleccionado
+            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
           }
 
           return (
@@ -112,7 +112,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
                 fontSize: "12px",
                 fontWeight: "bold",
               }}
-              icon={icon}
+              icon={{ url: icon }}
             />
           );
         })}
