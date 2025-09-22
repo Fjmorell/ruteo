@@ -13,11 +13,13 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const [ubicaciones, setUbicaciones] = useState([]);
   const mapRef = useRef(null);
 
-  // 📡 Cargar ubicaciones iniciales
+  // ✅ obtener el chofer logueado desde localStorage
+  const choferIdLogueado = localStorage.getItem("choferId");
+
   useEffect(() => {
     const fetchUbicaciones = async () => {
       const { data, error } = await supabase
-        .from("vista_choferes_ubicaciones") // 👈 mejor usar la vista que une chofer + ubicación
+        .from("vista_choferes_ubicaciones")
         .select("*");
 
       if (!error && data) setUbicaciones(data);
@@ -25,7 +27,6 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
 
     fetchUbicaciones();
 
-    // 🔄 Suscripción en tiempo real
     const channel = supabase
       .channel("ubicaciones_admin")
       .on(
@@ -33,7 +34,6 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         { event: "*", schema: "public", table: "ubicaciones_actuales" },
         async (payload) => {
           if (payload.new) {
-            // Buscar datos completos desde la vista
             const { data } = await supabase
               .from("vista_choferes_ubicaciones")
               .select("*")
@@ -56,7 +56,6 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     };
   }, []);
 
-  // 🗺️ Ajustar mapa automáticamente si no hay chofer seleccionado
   useEffect(() => {
     if (!choferIdSeleccionado && ubicaciones.length > 0 && mapRef.current) {
       const bounds = new window.google.maps.LatLngBounds();
@@ -87,22 +86,32 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         }}
         zoom={choferIdSeleccionado ? 15 : 13}
       >
-        {ubicaciones.map((u) => (
-          <Marker
-            key={u.chofer_id}
-            position={{ lat: u.lat, lng: u.lng }}
-            label={{
-              text: `${u.nombre || ""} ${u.apellido || ""}`,
-              fontSize: "12px",
-              fontWeight: "bold",
-            }}
-            icon={
-              choferIdSeleccionado === u.chofer_id
-                ? "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
-                : "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-            }
-          />
-        ))}
+        {ubicaciones.map((u) => {
+          let icon = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+
+          // 🔴 si es el seleccionado → rojo
+          if (choferIdSeleccionado === u.chofer_id) {
+            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+          }
+
+          // 🟢 si es el chofer logueado → verde
+          if (choferIdLogueado === u.chofer_id) {
+            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+          }
+
+          return (
+            <Marker
+              key={u.chofer_id}
+              position={{ lat: u.lat, lng: u.lng }}
+              label={{
+                text: `${u.nombre || ""} ${u.apellido || ""}`,
+                fontSize: "12px",
+                fontWeight: "bold",
+              }}
+              icon={icon}
+            />
+          );
+        })}
       </GoogleMap>
     </div>
   );
