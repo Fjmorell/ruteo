@@ -13,7 +13,6 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const [ubicaciones, setUbicaciones] = useState([]);
   const mapRef = useRef(null);
 
-  // ✅ chofer logueado (desde local storage / preferences)
   const choferIdLogueado = localStorage.getItem("choferId");
 
   useEffect(() => {
@@ -86,21 +85,18 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         zoom={choferIdSeleccionado ? 15 : 13}
       >
         {ubicaciones.map((u) => {
-          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ inactivo por defecto
+          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ Inactivo por defecto
 
-          // 🟢 chofer logueado
+          if (u.activo) {
+            icon = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"; // 🔵 Activo
+          }
+
           if (choferIdLogueado && choferIdLogueado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png"; // 🟢 Logueado
           }
 
-          // 🔴 chofer seleccionado (tiene prioridad sobre el logueado)
           if (choferIdSeleccionado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
-          }
-
-          // ✅ usar directamente el campo activo de la vista
-          if (!u.activo) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png";
+            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // 🔴 Seleccionado (máxima prioridad)
           }
 
           return (
@@ -120,7 +116,8 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
 
       {/* 📌 Leyenda */}
       <div className="mt-4 text-sm text-gray-600">
-        <p>🟢 Chofer activo (logueado)</p>
+        <p>🟢 Chofer logueado (este navegador)</p>
+        <p>🔵 Chofer activo</p>
         <p>🔴 Chofer seleccionado</p>
         <p>⚪ Chofer inactivo</p>
       </div>
