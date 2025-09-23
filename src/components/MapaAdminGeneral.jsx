@@ -104,16 +104,31 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
           }
 
           return (
-            <Marker
-              key={u.chofer_id}
-              position={{ lat: u.lat, lng: u.lng }}
-              label={{
-                text: `${u.nombre || ""} ${u.apellido || ""}`,
-                fontSize: "12px",
-                fontWeight: "bold",
-              }}
-              icon={{ url: icon }}
-            />
+          <Marker
+  key={u.chofer_id}
+  position={{ lat: u.lat, lng: u.lng }}
+  label={{
+    text: `${u.nombre || ""} ${u.apellido || ""}`,
+    fontSize: "12px",
+    fontWeight: "bold",
+  }}
+  icon={{
+    path: window.google.maps.SymbolPath.CIRCLE, // 🔵 Un círculo (podés cambiar por FORWARD_CLOSED_ARROW, BACKWARD_CLOSED_ARROW, etc.)
+    scale: 8, // tamaño del marker
+    fillColor:
+      choferIdSeleccionado === u.chofer_id
+        ? "red" // 🔴 Seleccionado
+        : choferIdLogueado === u.chofer_id
+        ? "green" // 🟢 Chofer logueado en este navegador
+        : u.activo
+        ? "blue" // 🔵 Activo
+        : "grey", // ⚪ Inactivo
+    fillOpacity: 1,
+    strokeColor: "black",
+    strokeWeight: 1,
+  }}
+/>
+
           );
         })}
       </GoogleMap>
