@@ -87,9 +87,11 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
       >
         {ubicaciones.map((u) => {
           // 🎨 Determinar color dinámicamente
-          let color = "grey"; // ⚪ Inactivo
+         let color = "grey"; // ⚪ Inactivo
 
-if (u.activo === true) {
+console.log("Ubicación chofer:", u);
+
+if (u.activo === true || u.activo === "true" || u.activo === 1) {
   color = "blue"; // 🔵 Activo
 }
 
@@ -105,7 +107,6 @@ if (
 ) {
   color = "red";
 }
-
 
           return (
             <Marker
