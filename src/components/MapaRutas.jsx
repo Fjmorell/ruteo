@@ -7,21 +7,31 @@ import {
 } from "@react-google-maps/api";
 import { useEffect, useState, useRef } from "react";
 import Papa from "papaparse";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-} from "@hello-pangea/dnd";
 
-const containerStyle = {
-  width: "100%",
-  height: "600px",
+// 👇 imports correctos de react-dnd
+import { DndProvider } from "react-dnd";
+import { useDrag, useDrop } from "react-dnd";
+
+// 👇 multi-backend para PC + móvil
+import { MultiBackend, TouchTransition } from "dnd-multi-backend";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import { TouchBackend } from "react-dnd-touch-backend";
+
+const HTML5toTouch = {
+  backends: [
+    { id: "html5", backend: HTML5Backend },
+    {
+      id: "touch",
+      backend: TouchBackend,
+      options: { enableMouseEvents: true },
+      preview: true,
+      transition: TouchTransition,
+    },
+  ],
 };
 
-const center = {
-  lat: -27.4712,
-  lng: -58.8367,
-};
+const containerStyle = { width: "100%", height: "600px" };
+const center = { lat: -27.4712, lng: -58.8367 };
 
 export function MapaRutas() {
   const { isLoaded } = useJsApiLoader({
@@ -30,7 +40,6 @@ export function MapaRutas() {
   });
 
   const mapRef = useRef(null);
-
   const [puntos, setPuntos] = useState([]);
   const [direccionInicio, setDireccionInicio] = useState("");
   const [nuevaDireccion, setNuevaDireccion] = useState("");
@@ -41,7 +50,6 @@ export function MapaRutas() {
   const geocodeDireccion = (direccion, nombre = "Punto") => {
     return new Promise((resolve, reject) => {
       if (!window.google) return reject("Google Maps no cargado");
-
       const geocoder = new window.google.maps.Geocoder();
       geocoder.geocode({ address: direccion }, (results, status) => {
         if (status === "OK" && results[0]) {
@@ -61,13 +69,11 @@ export function MapaRutas() {
 
   // 🚀 Calcular ruta
   useEffect(() => {
-    if (!isLoaded) return;
-    if (!direccionInicio || puntos.length < 1) return;
+    if (!isLoaded || !direccionInicio || puntos.length < 1) return;
 
     geocodeDireccion(direccionInicio, "Inicio")
       .then((origen) => {
         const destinos = puntos;
-
         if (destinos.length === 0) return;
 
         const waypoints =
@@ -87,7 +93,7 @@ export function MapaRutas() {
               lng: destinos[destinos.length - 1].lng,
             },
             waypoints,
-            optimizeWaypoints: false, // 👈 mantenemos el orden manual
+            optimizeWaypoints: true,
             travelMode: window.google.maps.TravelMode.DRIVING,
           },
           (resultDirections, status) => {
@@ -122,7 +128,7 @@ export function MapaRutas() {
       .catch(() => {});
   }, [puntos, direccionInicio, isLoaded]);
 
-  // 🚀 Agregar dirección manual
+  // 🚀 Agregar dirección
   const agregarDireccion = async () => {
     if (!nuevaDireccion.trim()) return;
     try {
@@ -142,13 +148,14 @@ export function MapaRutas() {
     setPuntos((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // 🚀 Reordenar direcciones con drag & drop
-  const onDragEnd = (result) => {
-    if (!result.destination) return;
-    const items = Array.from(puntos);
-    const [reordered] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reordered);
-    setPuntos(items);
+  // 🚀 Reordenar con drag & drop
+  const moveItem = (fromIndex, toIndex) => {
+    setPuntos((prev) => {
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated;
+    });
   };
 
   // 🚀 CSV
@@ -179,120 +186,130 @@ export function MapaRutas() {
   if (!isLoaded) return <div>Cargando mapa...</div>;
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6 w-full">
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-600">
-        📍 Puntos de Entrega
-      </h2>
+    <DndProvider backend={MultiBackend} options={HTML5toTouch}>
+      <div className="bg-white shadow-md rounded-lg p-6 w-full">
+        <h2 className="text-xl font-bold mb-4 text-red-600">📍 Puntos de Entrega</h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-        {/* Panel izquierdo */}
-        <div>
-          <input
-            type="text"
-            value={direccionInicio}
-            placeholder="Dirección de inicio (ej: Depósito Central)"
-            onChange={(e) => setDireccionInicio(e.target.value)}
-            className="w-full border rounded-lg p-2 mb-4 shadow-sm"
-          />
-
-          {/* Lista drag & drop */}
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="puntos">
-              {(provided) => (
-                <ul
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="space-y-3 mb-6"
-                >
-                  {puntos.map((p, index) => (
-                    <Draggable key={p.id} draggableId={p.id.toString()} index={index}>
-                      {(provided) => (
-                        <li
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border"
-                        >
-                          <span>
-                            {p.nombre} – {p.direccion}
-                          </span>
-                          <button
-                            onClick={() => eliminarDireccion(p.id)}
-                            className="ml-3 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm"
-                          >
-                            ❌ Eliminar
-                          </button>
-                        </li>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </ul>
-              )}
-            </Droppable>
-          </DragDropContext>
-
-          <div className="flex gap-2 mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+          {/* Panel izquierdo */}
+          <div>
             <input
               type="text"
-              value={nuevaDireccion}
-              placeholder="Ej: Av. 3 de Abril 900, Corrientes"
-              onChange={(e) => setNuevaDireccion(e.target.value)}
-              className="flex-1 border rounded-lg p-2 shadow-sm"
+              value={direccionInicio}
+              placeholder="Dirección de inicio"
+              onChange={(e) => setDireccionInicio(e.target.value)}
+              className="w-full border rounded-lg p-2 mb-4 shadow-sm"
             />
-            <button
-              type="button"
-              onClick={agregarDireccion}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              ➕ Agregar
-            </button>
-          </div>
 
-          {/* Botón subir CSV estilizado */}
-          <div className="mb-4">
-            <label className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg cursor-pointer inline-block">
-              📎 Subir CSV
+            <ul className="space-y-3 mb-6">
+              {puntos.map((p, index) => (
+                <DraggableItem
+                  key={p.id}
+                  id={p.id}
+                  index={index}
+                  moveItem={moveItem}
+                  eliminarDireccion={eliminarDireccion}
+                >
+                  {p.nombre} – {p.direccion}
+                </DraggableItem>
+              ))}
+            </ul>
+
+            <div className="flex gap-2 mb-4">
               <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="hidden"
+                type="text"
+                value={nuevaDireccion}
+                placeholder="Ej: Av. 3 de Abril 900, Corrientes"
+                onChange={(e) => setNuevaDireccion(e.target.value)}
+                className="flex-1 border rounded-lg p-2 shadow-sm"
               />
-            </label>
-            <small className="block mt-2 text-gray-500">
-              CSV con columnas <strong>nombre</strong> y{" "}
-              <strong>direccion</strong>
-            </small>
+              <button
+                type="button"
+                onClick={agregarDireccion}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              >
+                ➕ Agregar
+              </button>
+            </div>
+
+            {/* Botón subir CSV estilizado */}
+            <div className="mb-4">
+              <label className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg cursor-pointer inline-block">
+                📎 Subir CSV
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Mapa */}
+          <div>
+            <GoogleMap
+              mapContainerStyle={containerStyle}
+              center={center}
+              zoom={13}
+              onLoad={(map) => (mapRef.current = map)}
+            >
+              {puntos.map((p) => (
+                <Marker key={p.id} position={{ lat: p.lat, lng: p.lng }} />
+              ))}
+              {directions && <DirectionsRenderer directions={directions} />}
+            </GoogleMap>
           </div>
         </div>
 
-        {/* Mapa */}
-        <div>
-          <GoogleMap
-            mapContainerStyle={containerStyle}
-            center={center}
-            zoom={13}
-            onLoad={(map) => (mapRef.current = map)}
-          >
-            {puntos.map((p) => (
-              <Marker key={p.id} position={{ lat: p.lat, lng: p.lng }} />
-            ))}
-            {directions && <DirectionsRenderer directions={directions} />}
-          </GoogleMap>
-        </div>
+        {resumenRuta.distancia && (
+          <div className="mt-6 bg-gray-50 rounded-lg p-4 border">
+            <p>🛣️ Distancia total: <strong>{resumenRuta.distancia}</strong></p>
+            <p>⏱️ Tiempo estimado: <strong>{resumenRuta.duracion}</strong></p>
+          </div>
+        )}
       </div>
+    </DndProvider>
+  );
+}
 
-      {resumenRuta.distancia && (
-        <div className="mt-6 bg-gray-50 rounded-lg p-4 border">
-          <p>
-            🛣️ Distancia total: <strong>{resumenRuta.distancia}</strong>
-          </p>
-          <p>
-            ⏱️ Tiempo estimado: <strong>{resumenRuta.duracion}</strong>
-          </p>
-        </div>
-      )}
-    </div>
+/* 🔹 Componente arrastrable */
+function DraggableItem({ id, index, moveItem, eliminarDireccion, children }) {
+  const ref = useRef(null);
+
+  const [, drop] = useDrop({
+    accept: "item",
+    hover(item) {
+      if (item.index === index) return;
+      moveItem(item.index, index);
+      item.index = index;
+    },
+  });
+
+  const [{ isDragging }, drag] = useDrag({
+    type: "item",
+    item: { id, index },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  drag(drop(ref));
+
+  return (
+    <li
+      ref={ref}
+      className={`flex items-center justify-between bg-gray-50 rounded-lg p-3 border cursor-move ${
+        isDragging ? "opacity-50" : ""
+      }`}
+    >
+      <span>{children}</span>
+      <button
+        onClick={() => eliminarDireccion(id)}
+        className="ml-3 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm"
+      >
+        ❌
+      </button>
+    </li>
   );
 }

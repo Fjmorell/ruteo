@@ -18,8 +18,13 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@react-google-maps/api": "^2.20.7",
     "@supabase/supabase-js": "^2.57.4",
+    "dnd-multi-backend": "^9.0.0",
     "papaparse": "^5.5.3",
     "react": "^19.1.1",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
+    "react-dnd-multi-backend": "^9.0.0",
+    "react-dnd-touch-backend": "^16.0.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.1"
   },
