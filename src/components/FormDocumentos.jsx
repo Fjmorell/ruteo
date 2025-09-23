@@ -1,52 +1,33 @@
+// src/components/FormDocumentos.jsx
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function FormDocumentos({ choferId }) {
   const [files, setFiles] = useState({
-    fotoPerfil: null,
+    foto: null,
     carnet: null,
     seguro: null,
   });
 
   const handleFileChange = (e) => {
-    const { name, files: selected } = e.target;
-    setFiles({ ...files, [name]: selected[0] });
+    const { name, files: fileList } = e.target;
+    setFiles({ ...files, [name]: fileList[0] });
   };
 
   const handleUpload = async (e) => {
     e.preventDefault();
-
     try {
-      for (const [tipo, file] of Object.entries(files)) {
-        if (!file) continue;
+      for (const [key, file] of Object.entries(files)) {
+        if (file) {
+          const fileName = `${choferId}/${key}-${Date.now()}-${file.name}`;
+          const { error } = await supabase.storage
+            .from("documentos")
+            .upload(fileName, file);
 
-        const path = `${choferId}/${tipo}/${Date.now()}-${file.name}`;
-
-        // 1. Subir archivo a Supabase Storage
-        const { error: uploadError } = await supabase.storage
-          .from("documentos")
-          .upload(path, file);
-
-        if (uploadError) throw uploadError;
-
-        // 2. Obtener URL pública
-        const { data: urlData } = supabase.storage
-          .from("documentos")
-          .getPublicUrl(path);
-
-        // 3. Guardar en la tabla documentos
-        const { error: insertError } = await supabase.from("documentos").insert([
-          {
-            chofer_id: choferId,
-            tipo,
-            url: urlData.publicUrl,
-          },
-        ]);
-
-        if (insertError) throw insertError;
+          if (error) throw error;
+        }
       }
-
-      alert("✅ Documentos subidos y guardados en Supabase");
+      alert("✅ Documentos subidos con éxito");
     } catch (err) {
       alert("❌ Error al subir documentos: " + err.message);
     }
@@ -55,29 +36,54 @@ export default function FormDocumentos({ choferId }) {
   return (
     <form
       onSubmit={handleUpload}
-      className="bg-white shadow-md rounded-lg p-6 max-w-2xl"
+      className="bg-white shadow-md rounded-lg p-6 max-w-2xl space-y-6"
     >
-      <h2 className="text-xl font-bold mb-4 text-gray-700">Documentos</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+        📑 Documentos
+      </h2>
 
-      <div className="space-y-4">
-        <label>
-          Foto de perfil:
-          <input type="file" name="fotoPerfil" onChange={handleFileChange} />
+      {/* === Campo Foto de Perfil === */}
+      <div className="flex flex-col">
+        <label className="font-medium text-gray-700 mb-2">
+          📷 Foto de Perfil
         </label>
-
-        <label>
-          Carnet de conducir:
-          <input type="file" name="carnet" onChange={handleFileChange} />
-        </label>
-
-        <label>
-          Seguro:
-          <input type="file" name="seguro" onChange={handleFileChange} />
-        </label>
+        <input
+          type="file"
+          name="foto"
+          onChange={handleFileChange}
+          className="border rounded-lg p-2 text-sm"
+        />
       </div>
 
-      <button className="mt-6 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
-        Subir Documentos
+      {/* === Campo Carnet de Conducir === */}
+      <div className="flex flex-col">
+        <label className="font-medium text-gray-700 mb-2">
+          🪪 Carnet de Conducir
+        </label>
+        <input
+          type="file"
+          name="carnet"
+          onChange={handleFileChange}
+          className="border rounded-lg p-2 text-sm"
+        />
+      </div>
+
+      {/* === Campo Seguro === */}
+      <div className="flex flex-col">
+        <label className="font-medium text-gray-700 mb-2">📄 Seguro</label>
+        <input
+          type="file"
+          name="seguro"
+          onChange={handleFileChange}
+          className="border rounded-lg p-2 text-sm"
+        />
+      </div>
+
+      <button
+        type="submit"
+        className="w-full bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700 transition"
+      >
+        ✅ Subir Documentos
       </button>
     </form>
   );
