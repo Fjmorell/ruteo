@@ -25,8 +25,11 @@ export default function LoginChofer() {
 
       const userId = data.user.id;
 
-      // ✅ Guardar choferId en Preferences
+      // ✅ Guardar choferId en Preferences (para mobile con Capacitor)
       await Preferences.set({ key: "choferId", value: userId });
+
+      // ✅ Guardar choferId en localStorage (para web/React)
+      localStorage.setItem("choferId", userId);
 
       // ✅ Marcar chofer como activo en Supabase
       await supabase.from("choferes").update({ activo: true }).eq("id", userId);
