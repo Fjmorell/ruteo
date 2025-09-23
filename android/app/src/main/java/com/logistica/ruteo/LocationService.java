@@ -78,6 +78,12 @@ public class LocationService extends Service {
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
     }
 
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "▶️ LocationService iniciado en primer plano");
+        return START_STICKY;
+    }
+
     private void enviarUbicacionASupabase(double lat, double lng) {
         new Thread(() -> {
             try {
