@@ -1,7 +1,7 @@
-// src/components/MapaAdminGeneral.jsx
 import { useEffect, useState, useRef } from "react";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { supabase } from "../lib/supabase";
+import { Preferences } from "@capacitor/preferences";
 
 const containerStyle = { width: "100%", height: "500px" };
 
@@ -16,9 +16,21 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   });
 
   const [ubicaciones, setUbicaciones] = useState([]);
+  const [choferIdLogueado, setChoferIdLogueado] = useState("");
   const mapRef = useRef(null);
 
-  const choferIdLogueado = normalizarId(localStorage.getItem("choferId"));
+  // ✅ Cargar chofer logueado desde localStorage o Preferences
+  useEffect(() => {
+    const id = localStorage.getItem("choferId");
+    if (id) {
+      setChoferIdLogueado(normalizarId(id));
+    } else {
+      // fallback a Preferences (mobile)
+      Preferences.get({ key: "choferId" }).then((res) => {
+        if (res.value) setChoferIdLogueado(normalizarId(res.value));
+      });
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUbicaciones = async () => {
@@ -59,6 +71,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     };
   }, []);
 
+  // Ajuste de vista
   useEffect(() => {
     if (!choferIdSeleccionado && ubicaciones.length > 0 && mapRef.current) {
       const bounds = new window.google.maps.LatLngBounds();
@@ -67,8 +80,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     }
     if (choferIdSeleccionado && mapRef.current) {
       const chofer = ubicaciones.find(
-        (u) =>
-          normalizarId(u.chofer_id) === normalizarId(choferIdSeleccionado)
+        (u) => normalizarId(u.chofer_id) === normalizarId(choferIdSeleccionado)
       );
       if (chofer) {
         mapRef.current.setCenter({ lat: chofer.lat, lng: chofer.lng });
@@ -104,10 +116,10 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
           });
 
           let color = "grey"; // ⚪ Inactivo
-          if (u.activo === true) color = "blue"; // 🔵 Activo
-          if (idLogueado && idLogueado === idChofer) color = "green"; // 🟢 Logueado
+          if (u.activo === true) color = "blue";
+          if (idLogueado && idLogueado === idChofer) color = "green";
           if (idSeleccionado && idSeleccionado === idChofer && idLogueado !== idChofer)
-            color = "red"; // 🔴 Seleccionado
+            color = "red";
 
           return (
             <Marker
