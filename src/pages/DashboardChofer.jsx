@@ -9,7 +9,7 @@ import logo from "../assets/logo-logistica-argentina.png";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import useLiveLocation from "../hooks/useLiveLocation"; 
-import { Preferences } from "@capacitor/preferences"; // ✅ Usamos Preferences
+import { Preferences } from "@capacitor/preferences";
 
 export default function DashboardChofer() {
   const [active, setActive] = useState("datos");
@@ -32,16 +32,14 @@ export default function DashboardChofer() {
   // ✅ activar ubicación en vivo cada 15 segundos
   useLiveLocation(choferId, 15000);
 
- const handleLogout = async () => {
-  if (choferId) {
-    // ✅ Marcar chofer como inactivo en Supabase
-    await supabase.from("choferes").update({ activo: false }).eq("id", choferId);
-  }
-
-  await supabase.auth.signOut();
-  await Preferences.remove({ key: "choferId" }); 
-  navigate("/login");
-};
+  const handleLogout = async () => {
+    if (choferId) {
+      await supabase.from("choferes").update({ activo: false }).eq("id", choferId);
+    }
+    await supabase.auth.signOut();
+    await Preferences.remove({ key: "choferId" }); 
+    navigate("/login");
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -146,11 +144,11 @@ export default function DashboardChofer() {
           <p className="text-gray-600">Cargando chofer...</p>
         ) : (
           <>
-            {active === "datos" && <FormChofer />}
-            {active === "vehiculo" && <FormVehiculo />}
-            {active === "banco" && <FormBanco />}
-            {active === "documentos" && <FormDocumentos />}
-            {active === "ruteo" && <MapaRutas />}
+            {active === "datos" && <FormChofer choferId={choferId} />}
+            {active === "vehiculo" && <FormVehiculo choferId={choferId} />}
+            {active === "banco" && <FormBanco choferId={choferId} />}
+            {active === "documentos" && <FormDocumentos choferId={choferId} />}
+            {active === "ruteo" && <MapaRutas choferId={choferId} />}
           </>
         )}
       </main>
