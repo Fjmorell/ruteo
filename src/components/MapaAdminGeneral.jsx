@@ -5,8 +5,9 @@ import { supabase } from "../lib/supabase";
 
 const containerStyle = { width: "100%", height: "500px" };
 
-function limpiarId(id) {
-  return String(id || "").trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
+function normalizarId(id) {
+  if (!id) return "";
+  return String(id).trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
 }
 
 export default function MapaAdminGeneral({ choferIdSeleccionado }) {
@@ -17,8 +18,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const [ubicaciones, setUbicaciones] = useState([]);
   const mapRef = useRef(null);
 
-  // ✅ chofer logueado en este navegador
-  const choferIdLogueado = limpiarId(localStorage.getItem("choferId"));
+  const choferIdLogueado = normalizarId(localStorage.getItem("choferId"));
 
   useEffect(() => {
     const fetchUbicaciones = async () => {
@@ -67,7 +67,8 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     }
     if (choferIdSeleccionado && mapRef.current) {
       const chofer = ubicaciones.find(
-        (u) => limpiarId(u.chofer_id) === limpiarId(choferIdSeleccionado)
+        (u) =>
+          normalizarId(u.chofer_id) === normalizarId(choferIdSeleccionado)
       );
       if (chofer) {
         mapRef.current.setCenter({ lat: chofer.lat, lng: chofer.lng });
@@ -92,31 +93,21 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         zoom={13}
       >
         {ubicaciones.map((u) => {
-          let color = "grey"; // ⚪ Inactivo
-
-          const idChofer = limpiarId(u.chofer_id);
+          const idChofer = normalizarId(u.chofer_id);
+          const idLogueado = normalizarId(choferIdLogueado);
+          const idSeleccionado = normalizarId(choferIdSeleccionado);
 
           console.log("Comparando IDs:", {
-            choferIdLogueado,
-            chofer_id: idChofer,
-            iguales: choferIdLogueado === idChofer,
+            idLogueado,
+            idChofer,
+            iguales: idLogueado === idChofer,
           });
 
-          if (u.activo === true) {
-            color = "blue"; // 🔵 Activo
-          }
-
-          if (choferIdLogueado && choferIdLogueado === idChofer) {
-            color = "green"; // 🟢 Logueado en este navegador
-          }
-
-          if (
-            choferIdSeleccionado &&
-            limpiarId(choferIdSeleccionado) === idChofer &&
-            choferIdLogueado !== idChofer
-          ) {
+          let color = "grey"; // ⚪ Inactivo
+          if (u.activo === true) color = "blue"; // 🔵 Activo
+          if (idLogueado && idLogueado === idChofer) color = "green"; // 🟢 Logueado
+          if (idSeleccionado && idSeleccionado === idChofer && idLogueado !== idChofer)
             color = "red"; // 🔴 Seleccionado
-          }
 
           return (
             <Marker
