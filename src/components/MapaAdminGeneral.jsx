@@ -14,7 +14,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const mapRef = useRef(null);
 
   // ✅ chofer logueado en este navegador
-  const choferIdLogueado = localStorage.getItem("choferId");
+  const choferIdLogueado = (localStorage.getItem("choferId") || "").trim();
 
   useEffect(() => {
     const fetchUbicaciones = async () => {
@@ -62,7 +62,9 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
       mapRef.current.fitBounds(bounds);
     }
     if (choferIdSeleccionado && mapRef.current) {
-      const chofer = ubicaciones.find((u) => u.chofer_id == choferIdSeleccionado);
+      const chofer = ubicaciones.find(
+        (u) => String(u.chofer_id).trim() === String(choferIdSeleccionado).trim()
+      );
       if (chofer) {
         mapRef.current.setCenter({ lat: chofer.lat, lng: chofer.lng });
         mapRef.current.setZoom(15);
@@ -87,27 +89,29 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
       >
         {ubicaciones.map((u) => {
           // 🎨 Determinar color dinámicamente
-       let color = "grey"; // ⚪ Inactivo
+          let color = "grey"; // ⚪ Inactivo
 
-// 🔵 Activo
-if (u.activo === true) {
-  color = "blue";
-}
+          // 🔵 Activo
+          if (u.activo === true) {
+            color = "blue";
+          }
 
-// 🟢 Logueado en este navegador
-if (choferIdLogueado && choferIdLogueado === u.chofer_id) {
-  color = "green";
-}
+          // 🟢 Logueado en este navegador
+          if (
+            choferIdLogueado &&
+            String(choferIdLogueado).trim() === String(u.chofer_id).trim()
+          ) {
+            color = "green";
+          }
 
-// 🔴 Seleccionado → prioridad máxima (pero no si es el logueado)
-if (
-  choferIdSeleccionado &&
-  choferIdSeleccionado === u.chofer_id &&
-  choferIdLogueado !== u.chofer_id
-) {
-  color = "red";
-}
-
+          // 🔴 Seleccionado → prioridad máxima (pero no si es el logueado)
+          if (
+            choferIdSeleccionado &&
+            String(choferIdSeleccionado).trim() === String(u.chofer_id).trim() &&
+            String(choferIdLogueado).trim() !== String(u.chofer_id).trim()
+          ) {
+            color = "red";
+          }
 
           return (
             <Marker
