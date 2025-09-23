@@ -5,6 +5,10 @@ import { supabase } from "../lib/supabase";
 
 const containerStyle = { width: "100%", height: "500px" };
 
+function limpiarId(id) {
+  return String(id || "").trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
+}
+
 export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY,
@@ -14,7 +18,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   const mapRef = useRef(null);
 
   // ✅ chofer logueado en este navegador
-  const choferIdLogueado = (localStorage.getItem("choferId") || "").trim();
+  const choferIdLogueado = limpiarId(localStorage.getItem("choferId"));
 
   useEffect(() => {
     const fetchUbicaciones = async () => {
@@ -63,9 +67,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     }
     if (choferIdSeleccionado && mapRef.current) {
       const chofer = ubicaciones.find(
-        (u) =>
-          String(u.chofer_id).trim().toLowerCase() ===
-          String(choferIdSeleccionado).trim().toLowerCase()
+        (u) => limpiarId(u.chofer_id) === limpiarId(choferIdSeleccionado)
       );
       if (chofer) {
         mapRef.current.setCenter({ lat: chofer.lat, lng: chofer.lng });
@@ -90,41 +92,30 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         zoom={13}
       >
         {ubicaciones.map((u) => {
-          // 🎨 Determinar color dinámicamente
           let color = "grey"; // ⚪ Inactivo
 
-          // Debug: comparar IDs
+          const idChofer = limpiarId(u.chofer_id);
+
           console.log("Comparando IDs:", {
             choferIdLogueado,
-            chofer_id: u.chofer_id,
-            iguales:
-              String(choferIdLogueado).trim().toLowerCase() ===
-              String(u.chofer_id).trim().toLowerCase(),
+            chofer_id: idChofer,
+            iguales: choferIdLogueado === idChofer,
           });
 
-          // 🔵 Activo
           if (u.activo === true) {
-            color = "blue";
+            color = "blue"; // 🔵 Activo
           }
 
-          // 🟢 Logueado en este navegador
-          if (
-            choferIdLogueado &&
-            String(choferIdLogueado).trim().toLowerCase() ===
-              String(u.chofer_id).trim().toLowerCase()
-          ) {
-            color = "green";
+          if (choferIdLogueado && choferIdLogueado === idChofer) {
+            color = "green"; // 🟢 Logueado en este navegador
           }
 
-          // 🔴 Seleccionado → prioridad máxima (pero no si es el logueado)
           if (
             choferIdSeleccionado &&
-            String(choferIdSeleccionado).trim().toLowerCase() ===
-              String(u.chofer_id).trim().toLowerCase() &&
-            String(choferIdLogueado).trim().toLowerCase() !==
-              String(u.chofer_id).trim().toLowerCase()
+            limpiarId(choferIdSeleccionado) === idChofer &&
+            choferIdLogueado !== idChofer
           ) {
-            color = "red";
+            color = "red"; // 🔴 Seleccionado
           }
 
           return (
@@ -149,7 +140,6 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         })}
       </GoogleMap>
 
-      {/* 📌 Leyenda */}
       <div className="mt-4 text-sm text-gray-600">
         <p>🟢 Chofer logueado (este navegador)</p>
         <p>🔵 Chofer activo</p>
