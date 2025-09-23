@@ -62,7 +62,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
       mapRef.current.fitBounds(bounds);
     }
     if (choferIdSeleccionado && mapRef.current) {
-      const chofer = ubicaciones.find((u) => u.chofer_id === choferIdSeleccionado);
+      const chofer = ubicaciones.find((u) => u.chofer_id == choferIdSeleccionado);
       if (chofer) {
         mapRef.current.setCenter({ lat: chofer.lat, lng: chofer.lng });
         mapRef.current.setZoom(15);
@@ -86,49 +86,37 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         zoom={13}
       >
         {ubicaciones.map((u) => {
-          let icon = "http://maps.google.com/mapfiles/ms/icons/grey-dot.png"; // ⚪ Inactivo
+          // 🎨 Determinar color dinámicamente
+          let color = "grey"; // ⚪ Inactivo
 
-          // 🔵 Activo
-          if (u.activo) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+          if (u.activo === true) {
+            color = "blue"; // 🔵 Activo
           }
-
-          // 🟢 Logueado en este navegador
-          if (choferIdLogueado && choferIdLogueado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+          if (choferIdLogueado && choferIdLogueado == u.chofer_id) {
+            color = "green"; // 🟢 Logueado en este navegador
           }
-
-          // 🔴 Seleccionado → prioridad máxima
-          if (choferIdSeleccionado === u.chofer_id) {
-            icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+          if (choferIdSeleccionado && choferIdSeleccionado == u.chofer_id) {
+            color = "red"; // 🔴 Seleccionado → prioridad máxima
           }
 
           return (
-          <Marker
-  key={u.chofer_id}
-  position={{ lat: u.lat, lng: u.lng }}
-  label={{
-    text: `${u.nombre || ""} ${u.apellido || ""}`,
-    fontSize: "12px",
-    fontWeight: "bold",
-  }}
-  icon={{
-    path: window.google.maps.SymbolPath.CIRCLE, // 🔵 Un círculo (podés cambiar por FORWARD_CLOSED_ARROW, BACKWARD_CLOSED_ARROW, etc.)
-    scale: 8, // tamaño del marker
-    fillColor:
-      choferIdSeleccionado === u.chofer_id
-        ? "red" // 🔴 Seleccionado
-        : choferIdLogueado === u.chofer_id
-        ? "green" // 🟢 Chofer logueado en este navegador
-        : u.activo
-        ? "blue" // 🔵 Activo
-        : "grey", // ⚪ Inactivo
-    fillOpacity: 1,
-    strokeColor: "black",
-    strokeWeight: 1,
-  }}
-/>
-
+            <Marker
+              key={u.chofer_id}
+              position={{ lat: u.lat, lng: u.lng }}
+              label={{
+                text: `${u.nombre || ""} ${u.apellido || ""}`,
+                fontSize: "12px",
+                fontWeight: "bold",
+              }}
+              icon={{
+                path: window.google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: color,
+                fillOpacity: 1,
+                strokeColor: "black",
+                strokeWeight: 1,
+              }}
+            />
           );
         })}
       </GoogleMap>
