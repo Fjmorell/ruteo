@@ -63,7 +63,9 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     }
     if (choferIdSeleccionado && mapRef.current) {
       const chofer = ubicaciones.find(
-        (u) => String(u.chofer_id).trim() === String(choferIdSeleccionado).trim()
+        (u) =>
+          String(u.chofer_id).trim().toLowerCase() ===
+          String(choferIdSeleccionado).trim().toLowerCase()
       );
       if (chofer) {
         mapRef.current.setCenter({ lat: chofer.lat, lng: chofer.lng });
@@ -91,6 +93,15 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
           // 🎨 Determinar color dinámicamente
           let color = "grey"; // ⚪ Inactivo
 
+          // Debug: comparar IDs
+          console.log("Comparando IDs:", {
+            choferIdLogueado,
+            chofer_id: u.chofer_id,
+            iguales:
+              String(choferIdLogueado).trim().toLowerCase() ===
+              String(u.chofer_id).trim().toLowerCase(),
+          });
+
           // 🔵 Activo
           if (u.activo === true) {
             color = "blue";
@@ -99,7 +110,8 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
           // 🟢 Logueado en este navegador
           if (
             choferIdLogueado &&
-            String(choferIdLogueado).trim() === String(u.chofer_id).trim()
+            String(choferIdLogueado).trim().toLowerCase() ===
+              String(u.chofer_id).trim().toLowerCase()
           ) {
             color = "green";
           }
@@ -107,8 +119,10 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
           // 🔴 Seleccionado → prioridad máxima (pero no si es el logueado)
           if (
             choferIdSeleccionado &&
-            String(choferIdSeleccionado).trim() === String(u.chofer_id).trim() &&
-            String(choferIdLogueado).trim() !== String(u.chofer_id).trim()
+            String(choferIdSeleccionado).trim().toLowerCase() ===
+              String(u.chofer_id).trim().toLowerCase() &&
+            String(choferIdLogueado).trim().toLowerCase() !==
+              String(u.chofer_id).trim().toLowerCase()
           ) {
             color = "red";
           }
