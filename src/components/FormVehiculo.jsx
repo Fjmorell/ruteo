@@ -1,3 +1,4 @@
+// src/components/FormVehiculo.jsx
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -40,10 +41,12 @@ export default function FormVehiculo({ choferId }) {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      // upsert = inserta si no existe, actualiza si ya existe
       const { error } = await supabase.from("vehiculos").upsert({
         chofer_id: choferId,
-        ...vehiculo,
+        patente: vehiculo.patente,
+        marca: vehiculo.marca,
+        modelo: vehiculo.modelo,
+        anio: vehiculo.anio ? parseInt(vehiculo.anio, 10) : null, // 👈 asegurar número
       });
 
       if (error) throw error;
@@ -66,7 +69,7 @@ export default function FormVehiculo({ choferId }) {
         type="text"
         name="patente"
         placeholder="Patente"
-        value={vehiculo.patente}
+        value={vehiculo.patente || ""}
         onChange={handleChange}
         className="w-full p-2 border rounded"
         required
@@ -75,7 +78,7 @@ export default function FormVehiculo({ choferId }) {
         type="text"
         name="marca"
         placeholder="Marca"
-        value={vehiculo.marca}
+        value={vehiculo.marca || ""}
         onChange={handleChange}
         className="w-full p-2 border rounded"
       />
@@ -83,7 +86,7 @@ export default function FormVehiculo({ choferId }) {
         type="text"
         name="modelo"
         placeholder="Modelo"
-        value={vehiculo.modelo}
+        value={vehiculo.modelo || ""}
         onChange={handleChange}
         className="w-full p-2 border rounded"
       />
@@ -91,7 +94,7 @@ export default function FormVehiculo({ choferId }) {
         type="number"
         name="anio"
         placeholder="Año"
-        value={vehiculo.anio}
+        value={vehiculo.anio || ""}
         onChange={handleChange}
         className="w-full p-2 border rounded"
       />
