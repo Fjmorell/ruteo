@@ -1,3 +1,4 @@
+// src/components/MapaAdminGeneral.jsx
 import { useEffect, useState, useRef } from "react";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { supabase } from "../lib/supabase";
@@ -5,9 +6,10 @@ import { Preferences } from "@capacitor/preferences";
 
 const containerStyle = { width: "100%", height: "500px" };
 
+// 🔧 Normaliza cualquier tipo de dato a string plano
 function normalizarId(id) {
   if (!id) return "";
-  return String(id).trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
+  return JSON.stringify(String(id).trim().replace(/[\u200B-\u200D\uFEFF]/g, ""));
 }
 
 export default function MapaAdminGeneral({ choferIdSeleccionado }) {
@@ -23,15 +25,15 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
   useEffect(() => {
     const id = localStorage.getItem("choferId");
     if (id) {
-      setChoferIdLogueado(normalizarId(id));
+      setChoferIdLogueado(id);
     } else {
-      // fallback a Preferences (mobile)
       Preferences.get({ key: "choferId" }).then((res) => {
-        if (res.value) setChoferIdLogueado(normalizarId(res.value));
+        if (res.value) setChoferIdLogueado(res.value);
       });
     }
   }, []);
 
+  // ✅ Cargar ubicaciones
   useEffect(() => {
     const fetchUbicaciones = async () => {
       const { data, error } = await supabase
@@ -71,7 +73,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
     };
   }, []);
 
-  // Ajuste de vista
+  // ✅ Ajustar el mapa al seleccionar chofer
   useEffect(() => {
     if (!choferIdSeleccionado && ubicaciones.length > 0 && mapRef.current) {
       const bounds = new window.google.maps.LatLngBounds();
@@ -116,10 +118,10 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
           });
 
           let color = "grey"; // ⚪ Inactivo
-          if (u.activo === true) color = "blue";
-          if (idLogueado && idLogueado === idChofer) color = "green";
+          if (u.activo === true) color = "blue"; // 🔵 Activo
+          if (idLogueado && idLogueado === idChofer) color = "green"; // 🟢 Logueado
           if (idSeleccionado && idSeleccionado === idChofer && idLogueado !== idChofer)
-            color = "red";
+            color = "red"; // 🔴 Seleccionado
 
           return (
             <Marker
@@ -143,6 +145,7 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
         })}
       </GoogleMap>
 
+      {/* 📌 Leyenda */}
       <div className="mt-4 text-sm text-gray-600">
         <p>🟢 Chofer logueado (este navegador)</p>
         <p>🔵 Chofer activo</p>
