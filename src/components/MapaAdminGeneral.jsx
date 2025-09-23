@@ -87,26 +87,27 @@ export default function MapaAdminGeneral({ choferIdSeleccionado }) {
       >
         {ubicaciones.map((u) => {
           // 🎨 Determinar color dinámicamente
-         let color = "grey"; // ⚪ Inactivo
+       let color = "grey"; // ⚪ Inactivo
 
-console.log("Ubicación chofer:", u);
-
-if (u.activo === true || u.activo === "true" || u.activo === 1) {
-  color = "blue"; // 🔵 Activo
+// 🔵 Activo
+if (u.activo === true) {
+  color = "blue";
 }
 
-if (choferIdLogueado && String(choferIdLogueado) === String(u.chofer_id)) {
-  color = "green"; // 🟢 Logueado en este navegador
+// 🟢 Logueado en este navegador
+if (choferIdLogueado && choferIdLogueado === u.chofer_id) {
+  color = "green";
 }
 
 // 🔴 Seleccionado → prioridad máxima (pero no si es el logueado)
 if (
   choferIdSeleccionado &&
-  String(choferIdSeleccionado) === String(u.chofer_id) &&
-  String(choferIdLogueado) !== String(u.chofer_id)
+  choferIdSeleccionado === u.chofer_id &&
+  choferIdLogueado !== u.chofer_id
 ) {
   color = "red";
 }
+
 
           return (
             <Marker
