@@ -45,9 +45,15 @@ public class LocationService extends Service {
     public void onCreate() {
         super.onCreate();
 
-        // 🔹 Leer choferId desde SharedPreferences (guardado por Capacitor Preferences)
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        choferId = prefs.getString("choferId", "DESCONOCIDO");
+        // 🔹 Leer choferId desde las preferencias de Capacitor
+        SharedPreferences capacitorPrefs = getSharedPreferences("CapacitorStorage", MODE_PRIVATE);
+        choferId = capacitorPrefs.getString("choferId", null);
+
+        if (choferId == null) {
+            // Compatibilidad con posibles guardados anteriores en preferencias por defecto
+            SharedPreferences legacyPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+            choferId = legacyPrefs.getString("choferId", "DESCONOCIDO");
+        }
 
         Log.d(TAG, "🆔 Chofer ID cargado: " + choferId);
 
