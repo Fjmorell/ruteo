@@ -22,6 +22,7 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 
 import org.json.JSONObject;
 
@@ -35,6 +36,8 @@ public class LocationService extends Service {
     private static final String CHANNEL_ID = "location_channel";
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
+    private SharedPreferences capacitorPrefs;
+    private SharedPreferences legacyPrefs;
     private boolean shouldRestart = true;
 
     // 🔑 Supabase REST endpoint
@@ -47,15 +50,13 @@ public class LocationService extends Service {
     public void onCreate() {
         super.onCreate();
 
-        // 🔹 Leer choferId desde las preferencias de Capacitor
-        SharedPreferences capacitorPrefs = getSharedPreferences("CapacitorStorage", MODE_PRIVATE);
-        choferId = capacitorPrefs.getString("choferId", null);
+        capacitorPrefs = getSharedPreferences("CapacitorStorage", MODE_PRIVATE);
+        legacyPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-        if (choferId == null) {
-            // Compatibilidad con posibles guardados anteriores en preferencias por defecto
-            SharedPreferences legacyPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-            choferId = legacyPrefs.getString("choferId", "DESCONOCIDO");
-        }
+        choferId = readChoferId();
+
+        capacitorPrefs.registerOnSharedPreferenceChangeListener(preferenceChangeListener);
+        legacyPrefs.registerOnSharedPreferenceChangeListener(preferenceChangeListener);
 
         Log.d(TAG, "🆔 Chofer ID cargado: " + choferId);
 
@@ -66,22 +67,12 @@ public class LocationService extends Service {
             }
         }
 
-        if (choferId == null || "DESCONOCIDO".equals(choferId) || choferId.isEmpty()) {
-            Log.w(TAG, "⚠️ Sin choferId válido, deteniendo servicio de ubicación");
-            shouldRestart = false;
-            stopSelf();
-            return;
-        }
-
         createNotificationChannel();
         startForeground(1, getNotification());
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setInterval(10000); // cada 10 segundos
-        locationRequest.setFastestInterval(5000);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        LocationRequest locationRequest = buildLocationRequest();
 
         locationCallback = new LocationCallback() {
             @Override
@@ -89,6 +80,10 @@ public class LocationService extends Service {
                 if (locationResult == null) return;
 
                 for (Location location : locationResult.getLocations()) {
+                    if (!ensureChoferId()) {
+                        Log.d(TAG, "⏳ Ignorando ubicación; aún no hay choferId");
+                        continue;
+                    }
                     double lat = location.getLatitude();
                     double lng = location.getLongitude();
                     Log.d(TAG, "📍 Nueva ubicación: " + lat + ", " + lng);
@@ -98,13 +93,33 @@ public class LocationService extends Service {
             }
         };
 
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, getMainLooper());
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "▶️ LocationService iniciado en primer plano");
         return START_STICKY;
+    }
+
+    private boolean ensureChoferId() {
+        if (choferId != null && !"DESCONOCIDO".equals(choferId) && !choferId.isEmpty()) {
+            return true;
+        }
+
+        choferId = readChoferId();
+        return choferId != null && !choferId.isEmpty() && !"DESCONOCIDO".equals(choferId);
+    }
+
+    private String readChoferId() {
+        String id = capacitorPrefs.getString("choferId", null);
+        if (id == null) {
+            id = legacyPrefs.getString("choferId", null);
+        }
+        if (id != null) {
+            Log.d(TAG, "🆔 choferId actualizado: " + id);
+        }
+        return id;
     }
 
     private void enviarUbicacionASupabase(double lat, double lng) {
@@ -178,6 +193,12 @@ public class LocationService extends Service {
         if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback);
         }
+        if (capacitorPrefs != null) {
+            capacitorPrefs.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener);
+        }
+        if (legacyPrefs != null) {
+            legacyPrefs.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener);
+        }
         Log.d(TAG, "🛑 Servicio destruido, solicitando reinicio");
         requestRestart();
     }
@@ -193,5 +214,31 @@ public class LocationService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    private final SharedPreferences.OnSharedPreferenceChangeListener preferenceChangeListener = (sharedPreferences, key) -> {
+        if ("choferId".equals(key)) {
+            choferId = readChoferId();
+        }
+    };
+
+    private LocationRequest buildLocationRequest() {
+        long intervalMillis = 5000L; // 5 segundos
+        long fastestMillis = 2000L;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMillis)
+                    .setWaitForAccurateLocation(true)
+                    .setMinUpdateIntervalMillis(fastestMillis)
+                    .setMaxUpdateDelayMillis(intervalMillis * 2)
+                    .build();
+        } else {
+            LocationRequest request = LocationRequest.create();
+            request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            request.setInterval(intervalMillis);
+            request.setFastestInterval(fastestMillis);
+            request.setMaxWaitTime(intervalMillis * 2);
+            return request;
+        }
     }
 }
