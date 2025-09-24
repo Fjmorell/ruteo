@@ -14,6 +14,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -56,6 +57,13 @@ public class LocationService extends Service {
         }
 
         Log.d(TAG, "🆔 Chofer ID cargado: " + choferId);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            boolean tieneBackground = ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            if (!tieneBackground) {
+                Log.w(TAG, "⚠️ Permiso ACCESS_BACKGROUND_LOCATION no concedido; el servicio podría detenerse en segundo plano.");
+            }
+        }
 
         if (choferId == null || "DESCONOCIDO".equals(choferId) || choferId.isEmpty()) {
             Log.w(TAG, "⚠️ Sin choferId válido, deteniendo servicio de ubicación");
