@@ -33,6 +33,7 @@ public class LocationService extends Service {
     private static final String CHANNEL_ID = "location_channel";
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
+    private boolean shouldRestart = true;
 
     // 🔑 Supabase REST endpoint
     private static final String SUPABASE_URL = "https://ijptwyglnrpizhrwfgnq.supabase.co/rest/v1/ubicaciones_actuales";
@@ -49,6 +50,13 @@ public class LocationService extends Service {
         choferId = prefs.getString("choferId", "DESCONOCIDO");
 
         Log.d(TAG, "🆔 Chofer ID cargado: " + choferId);
+
+        if (choferId == null || "DESCONOCIDO".equals(choferId) || choferId.isEmpty()) {
+            Log.w(TAG, "⚠️ Sin choferId válido, deteniendo servicio de ubicación");
+            shouldRestart = false;
+            stopSelf();
+            return;
+        }
 
         createNotificationChannel();
         startForeground(1, getNotification());
@@ -116,6 +124,16 @@ public class LocationService extends Service {
         }).start();
     }
 
+    private void requestRestart() {
+        if (!shouldRestart) {
+            Log.d(TAG, "ℹ️ Reinicio no requerido porque shouldRestart=false");
+            return;
+        }
+        Intent restartIntent = new Intent(this, RestartReceiver.class);
+        restartIntent.setAction(RestartReceiver.ACTION_RESTART_LOCATION_SERVICE);
+        sendBroadcast(restartIntent);
+    }
+
     private Notification getNotification() {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Ruteo Choferes")
@@ -142,7 +160,18 @@ public class LocationService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        fusedLocationClient.removeLocationUpdates(locationCallback);
+        if (fusedLocationClient != null && locationCallback != null) {
+            fusedLocationClient.removeLocationUpdates(locationCallback);
+        }
+        Log.d(TAG, "🛑 Servicio destruido, solicitando reinicio");
+        requestRestart();
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        Log.d(TAG, "🧹 Task removida, solicitando reinicio");
+        requestRestart();
     }
 
     @Nullable
